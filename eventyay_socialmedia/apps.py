@@ -8,7 +8,7 @@ except ImportError:
     raise RuntimeError("Please use a later version of eventyay-tickets")
 
 
-class Social Media PluginApp(PluginConfig):
+class SocialMediaPluginApp(PluginConfig):
     default = True
     name = "eventyay_socialmedia"
     verbose_name = _("Social Media Plugin")

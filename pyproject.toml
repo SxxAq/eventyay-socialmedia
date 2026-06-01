@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.entry-points."pretix.plugin"]
-eventyay_socialmedia = "eventyay_socialmedia:PretixPluginMeta"
+eventyay_socialmedia = "eventyay_socialmedia"
 
 [project.entry-points."distutils.commands"]
 build = "pretix_plugin_build.build:CustomBuild"
