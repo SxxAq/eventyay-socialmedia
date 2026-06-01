@@ -1,0 +1,42 @@
+[project]
+name = "eventyay-socialmedia"
+dynamic = ["version"]
+description = "Social media automation plugin for eventyay"
+readme = "README.rst"
+license = {file = "LICENSE"}
+keywords = ["Eventyay"]
+authors = [
+    {name = "Saalim Aqueel", email = "aqueel192@gmail.com"},
+]
+maintainers = [
+    {name = "Saalim Aqueel", email = "aqueel192@gmail.com"},
+]
+
+dependencies = [
+]
+
+[project.entry-points."pretix.plugin"]
+eventyay_socialmedia = "eventyay_socialmedia:PretixPluginMeta"
+
+[project.entry-points."distutils.commands"]
+build = "pretix_plugin_build.build:CustomBuild"
+
+[build-system]
+requires = [
+    "setuptools",
+    "pretix-plugin-build",
+]
+
+[project.urls]
+homepage = "https://github.com/fossasia/eventyay-socialmedia"
+repository = "https://github.com/fossasia/eventyay-socialmedia"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "eventyay_socialmedia.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["eventyay_socialmedia*"]
+namespaces = false
