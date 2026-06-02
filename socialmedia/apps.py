@@ -15,7 +15,7 @@ class SocialMediaPluginApp(PluginConfig):
 
     class EventyayPluginMeta:
         name = _("Social Media")
-        author = "Saalim Aqueel"
+        author = "FOSSASIA"
         description = _("Social media automation plugin for eventyay")
         visible = True
         version = __version__
