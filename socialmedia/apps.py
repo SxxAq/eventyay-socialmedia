@@ -10,11 +10,11 @@ except ImportError:
 
 class SocialMediaPluginApp(PluginConfig):
     default = True
-    name = "eventyay_socialmedia"
-    verbose_name = _("Social Media Plugin")
+    name = "socialmedia"
+    verbose_name = _("Social Media")
 
     class EventyayPluginMeta:
-        name = _("Social Media Plugin")
+        name = _("Social Media")
         author = "Saalim Aqueel"
         description = _("Social media automation plugin for eventyay")
         visible = True

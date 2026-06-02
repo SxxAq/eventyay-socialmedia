@@ -3,6 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Local workspace files
+.agents/
+.codex/
+.pytest_cache/
+.venv/
+venv/
+
 # C extensions
 *.so
 

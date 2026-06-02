@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.entry-points."pretix.plugin"]
-eventyay_socialmedia = "eventyay_socialmedia"
+socialmedia = "socialmedia"
 
 [project.entry-points."distutils.commands"]
 build = "pretix_plugin_build.build:CustomBuild"
@@ -35,8 +35,14 @@ repository = "https://github.com/fossasia/eventyay-socialmedia"
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = {attr = "eventyay_socialmedia.__version__"}
+version = {attr = "socialmedia.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["eventyay_socialmedia*"]
+include = ["socialmedia*"]
 namespaces = false
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint.isort]
+known-first-party = ["socialmedia"]

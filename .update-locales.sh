@@ -1,6 +1,6 @@
 #!/bin/sh
 COMPONENTS=pretix/pretix-plugin-eventyay-socialmedia
-DIR=eventyay_socialmedia/locale
+DIR=socialmedia/locale
 # Renerates .po files used for translating the plugin
 set -e
 set -x
