@@ -17,11 +17,11 @@ jobs:
     name: ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v1
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.12
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -31,18 +31,20 @@ jobs:
       - name: Install pretix
         run: pip3 install pretix
       - name: Install Dependencies
-        run: pip3 install ruff -Ue .
-      - name: Run ruff
+        run: pip3 install -U ruff -e .
+      - name: Run ruff check
         run: ruff check --select I .
+      - name: Run ruff format
+        run: ruff format --check .
   flake:
     name: flake8
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v1
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.12
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -52,41 +54,19 @@ jobs:
       - name: Install pretix
         run: pip3 install pretix
       - name: Install Dependencies
-        run: pip3 install flake8 -Ue .
+        run: pip3 install -U flake8 -e .
       - name: Run flake8
         run: flake8 .
-        working-directory: .
-  black:
-    name: black
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.11
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - name: Install pretix
-        run: pip3 install pretix
-      - name: Install Dependencies
-        run: pip3 install black -Ue .
-      - name: Run black
-        run: black --check .
         working-directory: .
   packaging:
     name: packaging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v1
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.12
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -96,7 +76,7 @@ jobs:
       - name: Install pretix
         run: pip3 install pretix
       - name: Install Dependencies
-        run: pip3 install twine check-manifest pretix-plugin-build setuptools build -Ue .
+        run: pip3 install -U twine check-manifest pretix-plugin-build setuptools build -e .
       - name: Run check-manifest
         run: check-manifest .
         working-directory: .

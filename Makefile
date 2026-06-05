@@ -1,5 +1,5 @@
 all: localecompile
-LNGS:=`find socialmedia/locale/ -mindepth 1 -maxdepth 1 -type d -printf "-l %f "`
+LNGS:=$(shell python3 -c 'import os; print(" ".join(f"-l {d}" for d in os.listdir("socialmedia/locale") if os.path.isdir(os.path.join("socialmedia/locale", d)))) if os.path.exists("socialmedia/locale") else print("")')
 
 localecompile:
 	django-admin compilemessages
