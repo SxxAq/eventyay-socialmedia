@@ -12,7 +12,7 @@ urlpatterns = [
         name="index",
     ),
     path(
-        "control/common/socialmedia/",
+        "control/socialmedia/",
         views.global_index,
         name="global_index",
     ),
