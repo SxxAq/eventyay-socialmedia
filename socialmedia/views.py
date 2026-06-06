@@ -10,5 +10,3 @@ def index(request, organizer, event):
 @login_required
 def global_index(request):
     return HttpResponse("Social Media Global Dashboard Works")
-
-

@@ -2,7 +2,7 @@
 name = "eventyay-socialmedia"
 dynamic = ["version"]
 description = "Social media automation plugin for eventyay"
-readme = "README.rst"
+readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["Eventyay"]
 authors = [
