@@ -7,13 +7,8 @@ app_name = "socialmedia"
 
 urlpatterns = [
     path(
-        "control/event/<orgslug:organizer>/<slug:event>/socialmedia/",
+        "social/event/<orgslug:organizer>/<slug:event>/",
         views.index,
         name="index",
-    ),
-    path(
-        "control/socialmedia/",
-        views.global_index,
-        name="global_index",
     ),
 ]
