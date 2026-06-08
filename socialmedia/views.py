@@ -1,39 +1,34 @@
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
 
-from eventyay.base.models import Event
 from eventyay.eventyay_common.navigation import get_event_navigation
 
 
-@login_required
 def index(request, organizer, event):
-    event_obj = get_object_or_404(Event, slug=event, organizer__slug=organizer)
+    # Event/organizer are pre-resolved and attached to the request by core PermissionMiddleware.
 
-    # Permission check
+    # Check specific dashboard edit permissions
     if not request.user.has_event_permission(
-        event_obj.organizer,
-        event_obj,
+        request.organizer,
+        request.event,
         "can_change_event_settings",
         request=request,
     ):
         raise PermissionDenied()
 
-    # Check if plugin is enabled
-    if "socialmedia" not in event_obj.plugin_list:
+    # Check if the plugin is active for the event
+    if "socialmedia" not in request.event.plugin_list:
         raise Http404("Social Media plugin is not enabled for this event.")
 
     # Populate navigation items for the sidebar
-    request.event = event_obj
-    request.organizer = event_obj.organizer
-    nav_items = get_event_navigation(request, event_obj)
+    nav_items = get_event_navigation(request, request.event)
 
     return render(
         request,
         "socialmedia/index.html",
         {
-            "event": event_obj,
+            "event": request.event,
             "nav_items": nav_items,
         },
     )
