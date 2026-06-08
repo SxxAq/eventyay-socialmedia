@@ -1,0 +1,519 @@
+{% extends "eventyay_common/base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Social Media Dashboard" %} :: {{ event.name }}{% endblock %}
+
+{% block content %}
+    <div style="margin-bottom: 25px; overflow: visible !important;">
+        <div class="row" style="overflow: visible !important;">
+            <div class="col-md-8">
+                <h1 style="font-size: 28px; margin-top: 10px; margin-bottom: 5px; font-weight: 700; color: #333;">
+                    {% trans "Social Media Dashboard" %}
+                    <small style="font-size: 16px; color: #777; font-weight: normal; margin-left: 5px;">{{ event.name }}</small>
+                </h1>
+                <p style="font-size: 14px; color: #666; margin-bottom: 0;">
+                    {% trans "Manage accounts, customize templates, schedule trigger rules, and export announcements for this event." %}
+                </p>
+            </div>
+            <div class="col-md-4 text-right" style="margin-top: 15px; overflow: visible !important;">
+                <!-- Placeholder Helper -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 4px; font-weight: bold; padding: 6px 12px;">
+                        <i class="fa fa-question-circle"></i> {% trans "Placeholder Helper" %} <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-right" style="min-width: 240px; z-index: 1050;">
+                        <li class="dropdown-header" style="font-weight: bold; font-size: 11px;">{% trans "Available Template Placeholders" %}</li>
+                        <li><a href="#" onclick="return false;"><code>{event_name}</code> - {% trans "Event Name" %}</a></li>
+                        <li><a href="#" onclick="return false;"><code>{talk_title}</code> - {% trans "Session Title" %}</a></li>
+                        <li><a href="#" onclick="return false;"><code>{speaker_names}</code> - {% trans "Speaker Names" %}</a></li>
+                        <li><a href="#" onclick="return false;"><code>{talk_start_time}</code> - {% trans "Talk Start Time" %}</a></li>
+                        <li><a href="#" onclick="return false;"><code>{talk_url}</code> - {% trans "Public Talk Link" %}</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row">
+        <div class="col-sm-3">
+            <div class="panel panel-info" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="panel-heading" style="background-color: #d9edf7; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 10px 15px;">
+                    <div class="row">
+                        <div class="col-xs-3">
+                            <i class="fa fa-file-text-o fa-3x text-info" style="margin-top: 5px;"></i>
+                        </div>
+                        <div class="col-xs-9 text-right">
+                            <div class="huge" style="font-size: 28px; font-weight: bold; color: #31708f;">{{ draft_count|default:0 }}</div>
+                            <div style="font-weight: bold; color: #31708f; font-size: 12px;">{% trans "Draft Posts" %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="panel panel-warning" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="panel-heading" style="background-color: #fcf8e3; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 10px 15px;">
+                    <div class="row">
+                        <div class="col-xs-3">
+                            <i class="fa fa-clock-o fa-3x text-warning" style="margin-top: 5px;"></i>
+                        </div>
+                        <div class="col-xs-9 text-right">
+                            <div class="huge" style="font-size: 28px; font-weight: bold; color: #8a6d3b;">{{ scheduled_count|default:0 }}</div>
+                            <div style="font-weight: bold; color: #8a6d3b; font-size: 12px;">{% trans "Scheduled Posts" %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="panel panel-success" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="panel-heading" style="background-color: #dff0d8; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 10px 15px;">
+                    <div class="row">
+                        <div class="col-xs-3">
+                            <i class="fa fa-check-circle-o fa-3x text-success" style="margin-top: 5px;"></i>
+                        </div>
+                        <div class="col-xs-9 text-right">
+                            <div class="huge" style="font-size: 28px; font-weight: bold; color: #3c763d;">{{ published_count|default:0 }}</div>
+                            <div style="font-weight: bold; color: #3c763d; font-size: 12px;">{% trans "Published" %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="panel panel-danger" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="panel-heading" style="background-color: #f2dede; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 10px 15px;">
+                    <div class="row">
+                        <div class="col-xs-3">
+                            <i class="fa fa-exclamation-triangle fa-3x text-danger" style="margin-top: 5px;"></i>
+                        </div>
+                        <div class="col-xs-9 text-right">
+                            <div class="huge" style="font-size: 28px; font-weight: bold; color: #a94442;">{{ failed_count|default:0 }}</div>
+                            <div style="font-weight: bold; color: #a94442; font-size: 12px;">{% trans "Failed" %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 25px; font-weight: bold;">
+        <li role="presentation" class="active">
+            <a href="#overview" aria-controls="overview" role="tab" data-toggle="tab">
+                <i class="fa fa-dashboard"></i> {% trans "Overview" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#accounts" aria-controls="accounts" role="tab" data-toggle="tab">
+                <i class="fa fa-share-alt"></i> {% trans "Social Accounts" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#templates" aria-controls="templates" role="tab" data-toggle="tab">
+                <i class="fa fa-file-code-o"></i> {% trans "Post Templates" %}
+            </a>
+        </li>
+        <li role="presentation">
+            <a href="#rules" aria-controls="rules" role="tab" data-toggle="tab">
+                <i class="fa fa-sliders"></i> {% trans "Scheduling Rules" %}
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content" style="overflow: visible !important;">
+        
+        <!-- Overview Tab -->
+        <div role="tabpanel" class="tab-pane active" id="overview" style="overflow: visible !important;">
+            <div class="row" style="overflow: visible !important;">
+                <div class="col-md-8">
+                    <!-- Announcements List -->
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-bullhorn"></i> {% trans "Announcements & Posts" %}
+                            <a href="{% url 'plugins:socialmedia:export_posts_csv' organizer=event.organizer.slug event=event.slug %}" class="btn btn-default btn-xs pull-right" style="margin-top: -3px; font-weight: bold; border-radius: 4px;">
+                                <i class="fa fa-download"></i> {% trans "Export CSV" %}
+                            </a>
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            {% if posts %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped" style="margin-bottom: 0;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 10px 15px;">{% trans "Channel / Account" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Text" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Status" %}</th>
+                                                <th class="text-right" style="padding: 10px 15px;">{% trans "Action" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for post in posts %}
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        <span class="label label-info">{{ post.account.provider|title }}</span>
+                                                        <span style="margin-left: 5px;">{{ post.account.account_name }}</span>
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {{ post.text|truncatechars:80 }}
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {% if post.status == 'published' %}
+                                                            <span class="label label-success">{% trans "Published" %}</span>
+                                                        {% elif post.status == 'failed' %}
+                                                            <span class="label label-danger">{% trans "Failed" %}</span>
+                                                        {% elif post.status == 'scheduled' %}
+                                                            <span class="label label-warning">{% trans "Scheduled" %}</span>
+                                                        {% else %}
+                                                            <span class="label label-default">{{ post.status|title }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-right" style="vertical-align: middle; padding: 10px 15px;">
+                                                        <form method="post" action="{% url 'plugins:socialmedia:post_delete' organizer=event.organizer.slug event=event.slug pk=post.pk %}" style="display:inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger btn-xs" style="border-radius: 4px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted" style="padding: 30px 15px;">
+                                    <i class="fa fa-info-circle fa-fw"></i> {% trans "No social posts generated yet." %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4" style="overflow: visible !important;">
+                    <!-- Create Quick Post Announcement -->
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: visible !important;">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-plus-circle"></i> {% trans "Create Post Announcement" %}
+                        </div>
+                        <div class="panel-body" style="overflow: visible !important;">
+                            <form method="post" action="{% url 'plugins:socialmedia:post_create' organizer=event.organizer.slug event=event.slug %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="post-account" style="font-weight: bold;">{% trans "Select Account" %}</label>
+                                    <select id="post-account" name="account" class="form-control" required>
+                                        {% for account in accounts %}
+                                            <option value="{{ account.pk }}">{{ account.provider|title }} - {{ account.account_name }}</option>
+                                        {% empty %}
+                                            <option value="">{% trans "No accounts connected yet" %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="post-text" style="font-weight: bold;">{% trans "Post text" %}</label>
+                                    <textarea id="post-text" name="text" rows="4" class="form-control" required placeholder="{% trans "Write your social post here. Use variables helper to check template keys." %}"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="post-status" style="font-weight: bold;">{% trans "Status" %}</label>
+                                    <select id="post-status" name="status" class="form-control">
+                                        <option value="draft">{% trans "Draft" %}</option>
+                                        <option value="submitted">{% trans "Submitted" %}</option>
+                                        <option value="approved">{% trans "Approved" %}</option>
+                                        <option value="scheduled">{% trans "Scheduled" %}</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block" style="border-radius: 4px; font-weight: bold;">
+                                    <i class="fa fa-plus"></i> {% trans "Add Announcement" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Accounts Tab -->
+        <div role="tabpanel" class="tab-pane" id="accounts">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-share-alt"></i> {% trans "Connected Platforms & Accounts" %}
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            {% if accounts %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped" style="margin-bottom: 0;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 10px 15px;">{% trans "Platform/Provider" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Account/Handle" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Status" %}</th>
+                                                <th class="text-right" style="padding: 10px 15px;">{% trans "Action" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for account in accounts %}
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        <strong>{{ account.provider|title }}</strong>
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {{ account.account_name }}
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {% if account.is_active %}
+                                                            <span class="label label-success">{% trans "Active" %}</span>
+                                                        {% else %}
+                                                            <span class="label label-default">{% trans "Inactive" %}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-right" style="vertical-align: middle; padding: 10px 15px;">
+                                                        <form method="post" action="{% url 'plugins:socialmedia:account_delete' organizer=event.organizer.slug event=event.slug pk=account.pk %}" style="display:inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger btn-xs" style="border-radius: 4px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted" style="padding: 30px 15px;">
+                                    <i class="fa fa-info-circle fa-fw"></i> {% trans "No social accounts connected to this event yet." %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-link"></i> {% trans "Connect Platform Account" %}
+                        </div>
+                        <div class="panel-body">
+                            <form method="post" action="{% url 'plugins:socialmedia:account_create' organizer=event.organizer.slug event=event.slug %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="provider-select" style="font-weight: bold;">{% trans "Provider" %}</label>
+                                    <select id="provider-select" name="provider" class="form-control" required>
+                                        <option value="mastodon">Mastodon</option>
+                                        <option value="twitter">X / Twitter</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="postiz">Postiz API</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="acc-name" style="font-weight: bold;">{% trans "Account Handle/Name" %}</label>
+                                    <input type="text" id="acc-name" name="account_name" class="form-control" required placeholder="@handle or username">
+                                </div>
+                                <button type="submit" class="btn btn-success btn-block" style="border-radius: 4px; font-weight: bold;">
+                                    <i class="fa fa-plus"></i> {% trans "Connect Account" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Post Templates Tab -->
+        <div role="tabpanel" class="tab-pane" id="templates">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-file-code-o"></i> {% trans "Post Announcement Templates" %}
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            {% if templates %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped" style="margin-bottom: 0;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 10px 15px;">{% trans "Template Name" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Template Content" %}</th>
+                                                <th class="text-right" style="padding: 10px 15px;">{% trans "Action" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for t in templates %}
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        <strong>{{ t.name }}</strong>
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {{ t.template_text|truncatechars:80 }}
+                                                    </td>
+                                                    <td class="text-right" style="vertical-align: middle; padding: 10px 15px;">
+                                                        <form method="post" action="{% url 'plugins:socialmedia:template_delete' organizer=event.organizer.slug event=event.slug pk=t.pk %}" style="display:inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger btn-xs" style="border-radius: 4px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted" style="padding: 30px 15px;">
+                                    <i class="fa fa-info-circle fa-fw"></i> {% trans "No templates defined yet." %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-plus-circle"></i> {% trans "Create Announcement Template" %}
+                        </div>
+                        <div class="panel-body">
+                            <form method="post" action="{% url 'plugins:socialmedia:template_create' organizer=event.organizer.slug event=event.slug %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="template-name" style="font-weight: bold;">{% trans "Template Name" %}</label>
+                                    <input type="text" id="template-name" name="name" class="form-control" required placeholder="e.g. Session Announcement">
+                                </div>
+                                <div class="form-group">
+                                    <label for="template-text" style="font-weight: bold;">{% trans "Template text" %}</label>
+                                    <textarea id="template-text" name="template_text" rows="5" class="form-control" required placeholder="e.g. Excited to announce {speaker_names} speaking about {talk_title}!"></textarea>
+                                    <p class="help-block small">{% trans "Use variables from the dropdown helper above." %}</p>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-block" style="border-radius: 4px; font-weight: bold;">
+                                    <i class="fa fa-plus"></i> {% trans "Add Template" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheduling Rules Tab -->
+        <div role="tabpanel" class="tab-pane" id="rules">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-sliders"></i> {% trans "Announcement Schedule Rules" %}
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            {% if rules %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped" style="margin-bottom: 0;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 10px 15px;">{% trans "Template" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Trigger Event" %}</th>
+                                                <th style="padding: 10px 15px;">{% trans "Offset (minutes)" %}</th>
+                                                <th class="text-right" style="padding: 10px 15px;">{% trans "Action" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for rule in rules %}
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        <strong>{{ rule.template.name }}</strong>
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {{ rule.get_trigger_type_display }}
+                                                    </td>
+                                                    <td style="vertical-align: middle; padding: 10px 15px;">
+                                                        {{ rule.offset_minutes }} m
+                                                    </td>
+                                                    <td class="text-right" style="vertical-align: middle; padding: 10px 15px;">
+                                                        <form method="post" action="{% url 'plugins:socialmedia:rule_delete' organizer=event.organizer.slug event=event.slug pk=rule.pk %}" style="display:inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger btn-xs" style="border-radius: 4px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted" style="padding: 30px 15px;">
+                                    <i class="fa fa-info-circle fa-fw"></i> {% trans "No scheduling rules defined yet." %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="panel panel-default" style="border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="panel-heading" style="font-weight: bold; background-color: #fcfcfc;">
+                            <i class="fa fa-plus-circle"></i> {% trans "Create Trigger Rule" %}
+                        </div>
+                        <div class="panel-body">
+                            <form method="post" action="{% url 'plugins:socialmedia:rule_create' organizer=event.organizer.slug event=event.slug %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="rule-template" style="font-weight: bold;">{% trans "Select Template" %}</label>
+                                    <select id="rule-template" name="template" class="form-control" required>
+                                        {% for t in templates %}
+                                            <option value="{{ t.pk }}">{{ t.name }}</option>
+                                        {% empty %}
+                                            <option value="">{% trans "Create template first" %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rule-trigger" style="font-weight: bold;">{% trans "Trigger Event" %}</label>
+                                    <select id="rule-trigger" name="trigger_type" class="form-control" required>
+                                        <option value="before_event">{% trans "Before Event Starts" %}</option>
+                                        <option value="after_event">{% trans "After Event Ends" %}</option>
+                                        <option value="before_session">{% trans "Before Session Starts" %}</option>
+                                        <option value="after_session">{% trans "After Session Ends" %}</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rule-offset" style="font-weight: bold;">{% trans "Offset (in minutes)" %}</label>
+                                    <input type="number" id="rule-offset" name="offset_minutes" class="form-control" required placeholder="e.g. 1440 for 24h">
+                                </div>
+                                <button type="submit" class="btn btn-success btn-block" style="border-radius: 4px; font-weight: bold;">
+                                    <i class="fa fa-plus"></i> {% trans "Add Rule" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript to handle active tab recovery from URL Hash -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var hash = window.location.hash;
+            if (hash) {
+                var tabLink = document.querySelector('ul.nav-tabs a[href="' + hash + '"]');
+                if (tabLink) {
+                    var tab = new bootstrap.Tab(tabLink);
+                    tab.show();
+                }
+            }
+            // Update URL hash on tab click
+            var tabLinks = document.querySelectorAll('ul.nav-tabs a');
+            tabLinks.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    window.location.hash = this.getAttribute('href');
+                });
+            });
+        });
+    </script>
+{% endblock %}
