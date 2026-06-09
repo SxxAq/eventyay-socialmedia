@@ -1,0 +1,70 @@
+[project]
+name = "eventyay-socialmedia"
+dynamic = ["version"]
+description = "Social media automation plugin for eventyay"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["Eventyay"]
+authors = [
+    {name = "Saalim Aqueel", email = "aqueel192@gmail.com"},
+]
+maintainers = [
+    {name = "Saalim Aqueel", email = "aqueel192@gmail.com"},
+]
+
+dependencies = [
+]
+
+[project.entry-points."pretix.plugin"]
+socialmedia = "socialmedia"
+
+[project.entry-points."distutils.commands"]
+build = "pretix_plugin_build.build:CustomBuild"
+
+[build-system]
+requires = [
+    "setuptools",
+    "pretix-plugin-build",
+]
+
+[project.urls]
+homepage = "https://github.com/fossasia/eventyay-socialmedia"
+repository = "https://github.com/fossasia/eventyay-socialmedia"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "socialmedia.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["socialmedia*"]
+namespaces = false
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint.isort]
+known-first-party = ["socialmedia"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "eventyay.config.settings"
+
+[tool.coverage.run]
+source = ["socialmedia"]
+omit = [
+    "*/migrations/*",
+    "*/urls.py",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __str__",
+    "def __repr__",
+    "if settings.DEBUG",
+    "NOQA",
+    "NotImplementedError",
+]
+
