@@ -248,12 +248,9 @@ A possible initial package structure is:
 │   └── locale/            Translation files
 ├── tests/                 Plugin tests
 ├── pyproject.toml         Python package metadata and dependencies
-├── setup.py               Setuptools compatibility entry point, if needed
-├── setup.cfg              Tool configuration, if needed
-├── MANIFEST.in            Package data inclusion
 ├── Makefile               Translation and helper commands
 ├── LICENSE                Apache License 2.0
-└── README.rst             Project documentation
+└── README.md              Project documentation
 ```
 
 ## Suggested Eventyay integration points

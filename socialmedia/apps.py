@@ -6,7 +6,9 @@ from . import __version__
 try:
     from eventyay.base.plugins import PluginConfig
 except ImportError as e:
-    raise ImproperlyConfigured("Please use a later version of eventyay core package") from e
+    raise ImproperlyConfigured(
+        "Please use a later version of eventyay core package"
+    ) from e
 
 
 class SocialMediaPluginApp(PluginConfig):

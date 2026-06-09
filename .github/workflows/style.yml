@@ -33,6 +33,6 @@ jobs:
       - name: Install Dependencies
         run: pip3 install -U ruff -e .
       - name: Run ruff check
-        run: ruff check --select I .
+        run: ruff check .
       - name: Run ruff format
         run: ruff format --check .

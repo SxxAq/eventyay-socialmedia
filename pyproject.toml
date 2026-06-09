@@ -68,13 +68,3 @@ exclude_lines = [
     "NotImplementedError",
 ]
 
-[tool.check-manifest]
-ignore = [
-    ".update-locales.sh",
-    "pretixplugin.toml",
-    "Makefile",
-    "manage.py",
-    "tests/*",
-    "*.po",
-    ".gitkeep",
-]
