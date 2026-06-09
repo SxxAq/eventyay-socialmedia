@@ -18,7 +18,7 @@ def index(request, organizer, event):
         raise PermissionDenied()
 
     # Check if the plugin is active for the event
-    if "socialmedia" not in request.event.plugin_list:
+    if not request.event.is_socialmedia_enabled:
         raise Http404("Social Media plugin is not enabled for this event.")
 
     # Populate navigation items for the sidebar
