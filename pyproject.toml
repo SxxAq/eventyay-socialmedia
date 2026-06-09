@@ -71,7 +71,6 @@ exclude_lines = [
 [tool.check-manifest]
 ignore = [
     ".update-locales.sh",
-    ".install-hooks.sh",
     "pretixplugin.toml",
     "Makefile",
     "manage.py",
