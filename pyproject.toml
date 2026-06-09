@@ -46,3 +46,36 @@ line-length = 88
 
 [tool.ruff.lint.isort]
 known-first-party = ["socialmedia"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "eventyay.config.settings"
+
+[tool.coverage.run]
+source = ["socialmedia"]
+omit = [
+    "*/migrations/*",
+    "*/urls.py",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __str__",
+    "def __repr__",
+    "if settings.DEBUG",
+    "NOQA",
+    "NotImplementedError",
+]
+
+[tool.check-manifest]
+ignore = [
+    ".update-locales.sh",
+    ".install-hooks.sh",
+    "pretixplugin.toml",
+    "Makefile",
+    "manage.py",
+    "tests/*",
+    "*.po",
+    ".gitkeep",
+]
