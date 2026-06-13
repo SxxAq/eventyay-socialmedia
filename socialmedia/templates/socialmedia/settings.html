@@ -5,19 +5,6 @@
 {% block title %}{% trans "Social Media" %} :: {{ event.name }}{% endblock %}
 
 {% block content %}
-    <nav id="event-nav" class="header-nav" style="margin-bottom: 20px;">
-        <div class="navigation">
-            <div class="navigation-title">
-                <h2>
-                    {{ event.name }}
-                    <small class="text-muted small">
-                        {{ event.get_date_range_display }}
-                    </small>
-                </h2>
-            </div>
-            {% include "eventyay_common/event/component_link.html" %}
-        </div>
-    </nav>
 <style>
   /* ---- Page Layout ---- */
   .sm-page { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
