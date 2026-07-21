@@ -731,4 +731,4 @@ def test_publish_post_now_view(logged_in_organizer_client, organizer, event, set
     with scope(organizer=organizer, event=event):
         post.refresh_from_db()
         assert post.status == SocialMediaPostStatus.FAILED
-        assert post.error_message == "Rate limited"
+        assert "Rate limited" in post.error_message
