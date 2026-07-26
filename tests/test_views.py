@@ -575,6 +575,27 @@ def test_sync_posts_to_db_saves_media_url(organizer, event):
 
         post = db_posts.first()
         assert post.media_url == "https://testserver/speaker.jpg"
+        with patch(
+            "socialmedia.export.build_posts",
+            return_value=[
+                {
+                    "id": sub.pk,
+                    "type": "speaker",
+                    "post_date": "2026-07-28",
+                    "post_time": "12:00",
+                    "post_text": "Talk by speaker2",
+                    "offset_days": 0,
+                    "media_url": "https://testserver/speaker.jpg",
+                }
+            ],
+        ):
+            sync_posts_to_db(event)
+
+        db_posts = SocialMediaPost.objects.filter(event=event, post_type="speaker")
+        assert db_posts.exists()
+
+        post = db_posts.first()
+        assert post.media_url == "https://testserver/speaker.jpg"
 
         # Verify re-syncing preserves existing media_url if payload omits it
         with patch(
@@ -598,6 +619,7 @@ def test_sync_posts_to_db_saves_media_url(organizer, event):
 
 @pytest.mark.django_db
 def test_post_error_message_persistence(organizer, event):
+    from django.utils.timezone import now
     from django_scopes import scope
 
     from socialmedia.models import SocialMediaPost
@@ -606,6 +628,7 @@ def test_post_error_message_persistence(organizer, event):
         post = SocialMediaPost.objects.create(
             event=event,
             post_type="general",
+            scheduled_at=now(),
             post_text="Test Post",
             status="failed",
             error_message="API Connection Timeout",
@@ -615,13 +638,21 @@ def test_post_error_message_persistence(organizer, event):
 
 
 @pytest.mark.django_db
-def test_sync_to_schedulers_view(logged_in_organizer_client, organizer, event, settings):
+def test_sync_to_schedulers_view(
+    logged_in_organizer_client, organizer, event, settings
+):
     settings.SITE_URL = "https://testserver"
-    from django_scopes import scope
-    from django.utils.timezone import now
     from datetime import timedelta
-    from socialmedia.models import SocialMediaPost, SocialMediaPostStatus, SocialMediaAccount
     from unittest.mock import patch
+
+    from django.utils.timezone import now
+    from django_scopes import scope
+
+    from socialmedia.models import (
+        SocialMediaAccount,
+        SocialMediaPost,
+        SocialMediaPostStatus,
+    )
     from socialmedia.providers.buffer import BufferProvider
 
     url = reverse(
@@ -666,10 +697,16 @@ def test_sync_to_schedulers_view(logged_in_organizer_client, organizer, event, s
 @pytest.mark.django_db
 def test_publish_post_now_view(logged_in_organizer_client, organizer, event, settings):
     settings.SITE_URL = "https://testserver"
-    from django_scopes import scope
-    from django.utils.timezone import now
-    from socialmedia.models import SocialMediaPost, SocialMediaPostStatus, SocialMediaAccount
     from unittest.mock import patch
+
+    from django.utils.timezone import now
+    from django_scopes import scope
+
+    from socialmedia.models import (
+        SocialMediaAccount,
+        SocialMediaPost,
+        SocialMediaPostStatus,
+    )
     from socialmedia.providers.telegram import TelegramProvider
 
     url = reverse(
@@ -720,7 +757,10 @@ def test_publish_post_now_view(logged_in_organizer_client, organizer, event, set
         post.save()
 
     from socialmedia.providers.base import PublishingError
-    with patch.object(TelegramProvider, "publish_post", side_effect=PublishingError("Rate limited")) as mock_publish:
+
+    with patch.object(
+        TelegramProvider, "publish_post", side_effect=PublishingError("Rate limited")
+    ) as mock_publish:
         response = logged_in_organizer_client.post(
             url, data=json.dumps(payload), content_type="application/json"
         )
