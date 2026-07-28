@@ -143,7 +143,7 @@ def publish_scheduled_posts(sender, **kwargs):
     for post in due_posts:
         entity_id = post.entity_id or ""
         provider_name = None
-        for prov in ["telegram", "mastodon"]:
+        for prov in ["telegram", "mastodon", "twitter", "linkedin"]:
             if entity_id.endswith(f"_{prov}"):
                 provider_name = prov
                 break

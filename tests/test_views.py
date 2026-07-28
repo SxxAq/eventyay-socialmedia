@@ -430,9 +430,9 @@ def test_no_platforms_fallback(organizer, event):
         posts = build_posts(event)
 
     for post in posts:
-        assert post.get("platform") is None, (
-            f"Expected no platform on post {post['id']}, got {post['platform']!r}"
-        )
+        assert (
+            post.get("platform") is None
+        ), f"Expected no platform on post {post['id']}, got {post['platform']!r}"
 
 
 @pytest.mark.django_db
@@ -565,8 +565,19 @@ def test_sync_posts_to_db_saves_media_url(organizer, event):
         )
         sub.speakers.add(user)
 
-        with patch.object(
-            User, "get_avatar_url", return_value="https://testserver/speaker.jpg"
+        with patch(
+            "socialmedia.export.build_posts",
+            return_value=[
+                {
+                    "id": sub.pk,
+                    "type": "speaker",
+                    "post_date": "2026-07-28",
+                    "post_time": "12:00",
+                    "post_text": "Talk by speaker2",
+                    "offset_days": 0,
+                    "media_url": "https://testserver/speaker.jpg",
+                }
+            ],
         ):
             sync_posts_to_db(event)
 
