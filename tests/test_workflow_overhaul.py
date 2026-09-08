@@ -630,4 +630,92 @@ def test_preview_posts_is_read_only(
         assert SocialMediaPost.objects.filter(event=event).count() == 0
 
 
+@pytest.mark.django_db
+def test_settings_form_save_does_not_overwrite_templates(
+    logged_in_organizer_client, organizer, event, settings
+):
+    """Test that saving the general settings form does not wipe out templates saved by templates form."""
+    settings.SITE_URL = "https://testserver"
+
+    with scope(organizer=organizer, event=event):
+        event.settings.set("socialmedia_twitter_cfp_template", "Custom Twitter CFP: {cfp_link}")
+        event.settings.set("socialmedia_cfp_template", "Custom Universal CFP: {event_name}")
+
+    settings_url = reverse(
+        "plugins:socialmedia:plugin_settings",
+        kwargs={"organizer": organizer.slug, "event": event.slug},
+    )
+    # Save settings form
+    payload = {
+        "socialmedia_default_hashtags": "#testevent",
+        "socialmedia_auto_publish": True,
+    }
+    response = logged_in_organizer_client.post(settings_url, payload)
+    assert response.status_code == 302
+
+    with scope(organizer=organizer, event=event):
+        event = event.__class__.objects.get(pk=event.pk)
+        event.settings.flush()
+        # Verify templates are still intact and not reset to ""
+        assert event.settings.get("socialmedia_twitter_cfp_template") == "Custom Twitter CFP: {cfp_link}"
+        assert event.settings.get("socialmedia_cfp_template") == "Custom Universal CFP: {event_name}"
+        assert event.settings.get("socialmedia_default_hashtags") == "#testevent"
+
+
+@pytest.mark.django_db
+def test_custom_waves_form_validation(
+    logged_in_organizer_client, organizer, event, settings
+):
+    """Test SocialMediaTemplatesForm custom waves validation rejects invalid JSON or out-of-range offsets."""
+    settings.SITE_URL = "https://testserver"
+
+    url = reverse(
+        "plugins:socialmedia:templates",
+        kwargs={"organizer": organizer.slug, "event": event.slug},
+    )
+
+    # 1. Malformed JSON
+    payload = {
+        "socialmedia_cfp_custom_waves": "invalid-json-content",
+    }
+    response = logged_in_organizer_client.post(url, payload)
+    assert response.status_code == 200
+    assert "form" in response.context
+    assert not response.context["form"].is_valid()
+    assert "socialmedia_cfp_custom_waves" in response.context["form"].errors
+
+    # 2. Offset out of range
+    invalid_waves = [{"id": "w1", "label": "Invalid Offset", "offset": 9999, "enabled": True}]
+    payload = {
+        "socialmedia_cfp_custom_waves": json.dumps(invalid_waves),
+    }
+    response = logged_in_organizer_client.post(url, payload)
+    assert response.status_code == 200
+    assert not response.context["form"].is_valid()
+    assert "socialmedia_cfp_custom_waves" in response.context["form"].errors
+
+
+@pytest.mark.django_db
+def test_linkedin_and_telegram_char_limit_validation(
+    logged_in_organizer_client, organizer, event, settings
+):
+    """Test SocialMediaTemplatesForm rejects templates exceeding LinkedIn (3000) or Telegram (4096) limits."""
+    settings.SITE_URL = "https://testserver"
+
+    url = reverse(
+        "plugins:socialmedia:templates",
+        kwargs={"organizer": organizer.slug, "event": event.slug},
+    )
+
+    overlong_linkedin = "a" * 3001
+    payload = {
+        "socialmedia_linkedin_cfp_template": overlong_linkedin,
+    }
+    response = logged_in_organizer_client.post(url, payload)
+    assert response.status_code == 200
+    assert not response.context["form"].is_valid()
+    assert "socialmedia_linkedin_cfp_template" in response.context["form"].errors
+
+
+
 

@@ -1563,6 +1563,15 @@
   border-radius: 4px;
 }
 
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .post-status-cell {
   text-align: center;
   vertical-align: middle;

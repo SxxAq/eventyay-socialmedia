@@ -641,7 +641,10 @@ def generate_posts_view(request, organizer, event):
         )
     except Exception as exc:
         logger.exception("Error generating posts: %s", exc)
-        return JsonResponse({"success": False, "error": str(exc)}, status=500)
+        return JsonResponse(
+            {"success": False, "error": str(_("Internal server error"))},
+            status=500,
+        )
 
 
 @require_POST
@@ -724,7 +727,10 @@ def bulk_post_action(request, organizer, event):
         )
     except Exception as exc:
         logger.exception("Error executing bulk action: %s", exc)
-        return JsonResponse({"success": False, "error": str(exc)}, status=500)
+        return JsonResponse(
+            {"success": False, "error": str(_("Internal server error"))},
+            status=500,
+        )
 
 
 @require_POST

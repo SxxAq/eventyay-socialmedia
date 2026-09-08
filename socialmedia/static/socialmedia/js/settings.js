@@ -22,6 +22,9 @@
       CSRF_TOKEN: config.csrfToken || (document.querySelector("input[name=csrfmiddlewaretoken]") ? document.querySelector("input[name=csrfmiddlewaretoken]").value : ""),
       TRANS_CLICK_TO_EDIT: config.transClickToEdit || "Click to edit · Ctrl+Enter to save",
       TRANS_SELECT_AT_LEAST_ONE: config.transSelectAtLeastOne || "Please select at least one post to export.",
+      TRANS_UNDO: config.transUndo || "Undo",
+      TRANS_DISCONNECTED: config.transDisconnected || "Account Disconnected",
+      TRANS_MISSING: config.transMissing || "No Account Connected",
     };
   })();
 
@@ -376,7 +379,7 @@
         const undoBtn = document.createElement("button");
         undoBtn.className = "sm-toast-undo";
         undoBtn.type = "button";
-        undoBtn.textContent = "Undo";
+        undoBtn.textContent = Config.TRANS_UNDO;
         undoBtn.addEventListener("click", () => {
           onUndo();
           toast.remove();
@@ -503,11 +506,11 @@
         } else if (p.account_status === "disconnected" || !p.account_handle) {
           const missingDiv = document.createElement("div");
           missingDiv.className = "plat-account-missing text-warning";
-          missingDiv.title = "No active account connected for this platform";
+          missingDiv.title = Config.TRANS_MISSING;
           const wIcon = document.createElement("i");
           wIcon.className = "fa fa-exclamation-triangle";
           missingDiv.appendChild(wIcon);
-          missingDiv.appendChild(document.createTextNode(" Not connected"));
+          missingDiv.appendChild(document.createTextNode(" " + Config.TRANS_DISCONNECTED));
           tdPlat.appendChild(missingDiv);
         }
       } else {
@@ -1393,7 +1396,13 @@
     },
 
     bulkRetry(provider = null) {
-      let failedPosts = PostState.getFiltered().filter(p => p.status === "failed");
+      const selectedFailed = PostState.getFiltered().filter(p => p.enabled && p.status === "failed");
+      let failedPosts;
+      if (selectedFailed.length > 0 && !provider) {
+        failedPosts = selectedFailed;
+      } else {
+        failedPosts = PostState.getFiltered().filter(p => p.status === "failed");
+      }
       if (provider) {
         failedPosts = failedPosts.filter(p => p.platform === provider || (p.id && String(p.id).endsWith(`_${provider}`)));
       }
@@ -2070,7 +2079,7 @@
             <div class="wave-toggle-wrap">
               <input type="checkbox" class="custom-wave-enable" checked>
               <span class="wave-badge wave-custom-badge"><i class="fa fa-sparkles"></i> Custom Wave:</span>
-              <input type="text" class="form-control input-sm custom-wave-label" value="Custom Wave" placeholder="e.g. Early Call" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
+              <input type="text" class="form-control input-sm custom-wave-label" maxlength="50" value="Custom Wave" placeholder="e.g. Early Call" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
             </div>
             <div class="wave-offset-wrap">
               <span class="wave-offset-label">${unitLabel}</span>

@@ -136,7 +136,7 @@
               <div class="wave-toggle-wrap">
                 <input type="checkbox" class="custom-wave-enable" {% if cw.enabled %}checked{% endif %}>
                 <span class="wave-badge wave-custom-badge"><i class="fa fa-sparkles"></i> {% trans "Custom Wave:" %}</span>
-                <input type="text" class="form-control input-sm custom-wave-label" value="{{ cw.label }}" placeholder="{% trans 'e.g. Early Call' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
+                <input type="text" class="form-control input-sm custom-wave-label" maxlength="50" value="{{ cw.label }}" placeholder="{% trans 'e.g. Early Call' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
               </div>
               <div class="wave-offset-wrap">
                 <span class="wave-offset-label">{% trans "Days before deadline:" %}</span>
@@ -338,7 +338,7 @@
               <div class="wave-toggle-wrap">
                 <input type="checkbox" class="custom-wave-enable" {% if cw.enabled %}checked{% endif %}>
                 <span class="wave-badge wave-custom-badge"><i class="fa fa-sparkles"></i> {% trans "Custom Wave:" %}</span>
-                <input type="text" class="form-control input-sm custom-wave-label" value="{{ cw.label }}" placeholder="{% trans 'e.g. Keynote Spotlight' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
+                <input type="text" class="form-control input-sm custom-wave-label" maxlength="50" value="{{ cw.label }}" placeholder="{% trans 'e.g. Keynote Spotlight' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
               </div>
               <div class="wave-offset-wrap">
                 <span class="wave-offset-label">{% trans "Days before session:" %}</span>
@@ -545,7 +545,7 @@
               <div class="wave-toggle-wrap">
                 <input type="checkbox" class="custom-wave-enable" {% if cw.enabled %}checked{% endif %}>
                 <span class="wave-badge wave-custom-badge"><i class="fa fa-sparkles"></i> {% trans "Custom Wave:" %}</span>
-                <input type="text" class="form-control input-sm custom-wave-label" value="{{ cw.label }}" placeholder="{% trans 'e.g. 5 Min Warning' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
+                <input type="text" class="form-control input-sm custom-wave-label" maxlength="50" value="{{ cw.label }}" placeholder="{% trans 'e.g. 5 Min Warning' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
               </div>
               <div class="wave-offset-wrap">
                 <span class="wave-offset-label">{% trans "Minutes before session:" %}</span>
@@ -749,7 +749,7 @@
               <div class="wave-toggle-wrap">
                 <input type="checkbox" class="custom-wave-enable" {% if cw.enabled %}checked{% endif %}>
                 <span class="wave-badge wave-custom-badge"><i class="fa fa-sparkles"></i> {% trans "Custom Wave:" %}</span>
-                <input type="text" class="form-control input-sm custom-wave-label" value="{{ cw.label }}" placeholder="{% trans 'e.g. Early Bird' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
+                <input type="text" class="form-control input-sm custom-wave-label" maxlength="50" value="{{ cw.label }}" placeholder="{% trans 'e.g. Early Bird' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
               </div>
               <div class="wave-offset-wrap">
                 <span class="wave-offset-label">{% trans "Days before event:" %}</span>
@@ -927,7 +927,7 @@
               <div class="wave-toggle-wrap">
                 <input type="checkbox" class="custom-wave-enable" {% if cw.enabled %}checked{% endif %}>
                 <span class="wave-badge wave-custom-badge"><i class="fa fa-sparkles"></i> {% trans "Custom Wave:" %}</span>
-                <input type="text" class="form-control input-sm custom-wave-label" value="{{ cw.label }}" placeholder="{% trans 'e.g. Schedule Sneak Peek' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
+                <input type="text" class="form-control input-sm custom-wave-label" maxlength="50" value="{{ cw.label }}" placeholder="{% trans 'e.g. Schedule Sneak Peek' %}" style="width: 150px; display: inline-block; height: 26px; padding: 2px 6px;">
               </div>
               <div class="wave-offset-wrap">
                 <span class="wave-offset-label">{% trans "Days before event:" %}</span>
