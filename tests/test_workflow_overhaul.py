@@ -563,3 +563,71 @@ def test_add_custom_wave_and_generation(
         assert "Midway reminder for" in mid_post["post_text"]
 
 
+@pytest.mark.django_db
+def test_bulk_discard_action_empty_ids_fails(
+    logged_in_organizer_client, organizer, event, settings
+):
+    """Test bulk_post_action with action='discard' and empty IDs returns 400."""
+    settings.SITE_URL = "https://testserver"
+
+    with scope(organizer=organizer, event=event):
+        post = SocialMediaPost.objects.create(
+            event=event,
+            post_type="cfp",
+            entity_id="cfp_0_twitter",
+            scheduled_at=now() + timedelta(days=1),
+            post_text="Do not discard me",
+            status=SocialMediaPostStatus.SCHEDULED,
+        )
+
+    url = reverse(
+        "plugins:socialmedia:bulk_action",
+        kwargs={"organizer": organizer.slug, "event": event.slug},
+    )
+    # Empty db_ids and post_ids
+    payload = {"action": "discard", "db_ids": [], "post_ids": []}
+    response = logged_in_organizer_client.post(
+        url,
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert data["success"] is False
+
+    with scope(organizer=organizer, event=event):
+        post.refresh_from_db()
+        assert post.status == SocialMediaPostStatus.SCHEDULED
+
+
+@pytest.mark.django_db
+def test_preview_posts_is_read_only(
+    logged_in_organizer_client, organizer, event, settings
+):
+    """Test preview_posts GET endpoint is read-only and does not create or mutate DB records."""
+    settings.SITE_URL = "https://testserver"
+
+    with scope(organizer=organizer, event=event):
+        event.settings.set("socialmedia_twitter_enabled", True)
+        event.settings.set("socialmedia_cfp_enabled", True)
+        assert SocialMediaPost.objects.filter(event=event).count() == 0
+
+    url = reverse(
+        "plugins:socialmedia:preview",
+        kwargs={"organizer": organizer.slug, "event": event.slug},
+    )
+    # Read-only GET request should return has_generated_posts=False and not write to DB
+    response = logged_in_organizer_client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_generated_posts"] is False
+
+    # POST should be rejected (405 Method Not Allowed)
+    post_response = logged_in_organizer_client.post(url)
+    assert post_response.status_code == 405
+
+    with scope(organizer=organizer, event=event):
+        assert SocialMediaPost.objects.filter(event=event).count() == 0
+
+
+

@@ -168,11 +168,8 @@
 
   // ---- API Client module ----
   const APIClient = {
-    fetchPreview(force = false) {
-      const url = force
-        ? `${Config.PREVIEW_URL}${Config.PREVIEW_URL.includes("?") ? "&" : "?"}generate=true`
-        : Config.PREVIEW_URL;
-      return fetch(url, {
+    fetchPreview() {
+      return fetch(Config.PREVIEW_URL, {
         headers: { "X-Requested-With": "XMLHttpRequest" }
       }).then(r => {
         if (!r.ok) throw new Error(`HTTP error ${r.status}`);
@@ -181,7 +178,7 @@
     },
     generatePosts() {
       if (!Config.GENERATE_URL) {
-        return this.fetchPreview(true);
+        return Promise.reject(new Error("Generate URL not configured"));
       }
       return fetch(Config.GENERATE_URL, {
         method: "POST",
@@ -1242,7 +1239,7 @@
       }
     },
 
-    loadInitialData(force = false) {
+    loadInitialData() {
       const btn = document.getElementById("btn-regenerate");
       if (btn) {
         btn.disabled = true;
@@ -1250,7 +1247,7 @@
       }
       UI.showSkeleton();
 
-      APIClient.fetchPreview(force)
+      APIClient.fetchPreview()
         .then(data => {
           const incoming = data.posts || [];
           const hasGenerated = data.has_generated_posts !== false;
@@ -1258,7 +1255,7 @@
           const emptyStateEl = document.getElementById("sm-empty-setup-state");
           const mainContentEl = document.getElementById("sm-posts-main-content");
 
-          if (!hasGenerated || (incoming.length === 0 && !force)) {
+          if (!hasGenerated || incoming.length === 0) {
             PostState.init([]);
             if (emptyStateEl && mainContentEl) {
               emptyStateEl.style.display = "block";
@@ -1335,7 +1332,7 @@
       APIClient.generatePosts()
         .then(res => {
           UI.showToast(res.message || "Posts generated successfully!", "success");
-          this.loadInitialData(true);
+          this.loadInitialData();
         })
         .catch(err => {
           UI.showToast("Post generation failed: " + err.message, "warning");
@@ -1446,7 +1443,7 @@
       APIClient.saveSettings(formData)
         .then(() => {
           UI.showToast("Settings saved successfully.", "success");
-          this.loadInitialData(true);
+          this.loadInitialData();
         })
         .catch(() => {
           form.submit();

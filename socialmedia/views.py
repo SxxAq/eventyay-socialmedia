@@ -12,7 +12,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, FormView, ListView, UpdateView
 from eventyay.base.models import Team
 from eventyay.control.permissions import OrganizerPermissionRequiredMixin
@@ -552,25 +552,19 @@ class PublishingLogView(DecoupleMixin, FormView):
         )
 
 
+@require_GET
 def preview_posts(request, organizer, event):
     """AJAX GET — returns JSON list of generated posts merged with DB state.
 
-    Syncs generated schedule posts to DB via sync_posts_to_db() when generated
-    and returns full preview metadata (status badges, media URLs, account handles).
+    Read-only view: returns full preview metadata (status badges, media URLs,
+    account handles) without mutating the database.
     """
     _check_permission(request)
     _check_plugin_active(request)
     try:
-        force_generate = (
-            request.GET.get("generate") == "true" or request.GET.get("force") == "true"
-        )
         has_posts = SocialMediaPost.objects.filter(event=request.event).exists()
-
-        if not has_posts and not force_generate:
+        if not has_posts:
             return JsonResponse({"posts": [], "has_generated_posts": False})
-
-        if force_generate or has_posts:
-            sync_posts_to_db(request.event, request)
 
         raw_posts = build_posts(request.event, request)
         db_posts = {
@@ -663,6 +657,14 @@ def bulk_post_action(request, organizer, event):
         provider = data.get("provider")
 
         if action == "discard":
+            if not db_ids and not post_ids:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": str(_("No post IDs provided for discard.")),
+                    },
+                    status=400,
+                )
             qs = SocialMediaPost.objects.filter(event=request.event)
             if db_ids:
                 qs = qs.filter(pk__in=db_ids)
