@@ -51,7 +51,7 @@ def test_socialmedia_settings_view_post(
 ):
     settings.SITE_URL = "https://testserver"
     url = reverse(
-        "plugins:socialmedia:index",
+        "plugins:socialmedia:plugin_settings",
         kwargs={"organizer": organizer.slug, "event": event.slug},
     )
 
@@ -61,19 +61,14 @@ def test_socialmedia_settings_view_post(
             "socialmedia_default_hashtags": "#pytest #testing",
             "socialmedia_cfp_enabled": "on",
             "socialmedia_cfp_offset": "5",
-            "socialmedia_cfp_template": "CFP Deadline: {cfp_deadline}",
             "socialmedia_speaker_enabled": "on",
-            "socialmedia_speaker_offset": "3",
-            "socialmedia_speaker_template": "Speaker: {speaker_name}",
+            "socialmedia_speaker_offset": "4",
             "socialmedia_session_enabled": "on",
             "socialmedia_session_offset": "15",
-            "socialmedia_session_template": "Session: {talk_title}",
             "socialmedia_ticket_enabled": "on",
             "socialmedia_ticket_offset": "4",
-            "socialmedia_ticket_template": "Ticket: {ticket_name}",
             "socialmedia_schedule_enabled": "on",
             "socialmedia_schedule_offset": "1",
-            "socialmedia_schedule_template": "Schedule: {schedule_link}",
             "socialmedia_auto_publish": "on",
         },
     )
@@ -89,10 +84,7 @@ def test_socialmedia_settings_view_post(
         event.settings.flush()
         assert event.settings.get("socialmedia_default_hashtags") == "#pytest #testing"
         assert event.settings.get("socialmedia_cfp_offset") == "5"
-        assert (
-            event.settings.get("socialmedia_cfp_template")
-            == "CFP Deadline: {cfp_deadline}"
-        )
+        assert event.settings.get("socialmedia_speaker_offset") == "4"
         assert event.settings.get("socialmedia_auto_publish", as_type=bool) is True
 
 

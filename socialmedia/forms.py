@@ -20,16 +20,16 @@ PLATFORM_ORDER = ["twitter", "linkedin", "telegram", "mastodon"]
 PLATFORM_CHAR_LIMITS = {
     "twitter": 280,
     "mastodon": 500,
-    "telegram": None,
-    "linkedin": None,
+    "telegram": 4096,
+    "linkedin": 3000,
 }
 
 # Extra help-text hints per platform
 _PLATFORM_HINTS = {
     "twitter": "≤280 chars.",
     "mastodon": "≤500 chars.",
-    "telegram": "Markdown supported.",
-    "linkedin": "Professional tone.",
+    "telegram": "Markdown supported (≤4096 chars).",
+    "linkedin": "Professional tone (≤3000 chars).",
 }
 
 # Available placeholder tokens per post type
@@ -181,9 +181,6 @@ class SocialMediaSettingsForm(SettingsForm):
         initial=False,
     )
 
-    # Per-platform × per-type template fields are generated dynamically
-    # in __init__() below via PLATFORM_ORDER × _TYPE_LABELS.
-
     # ------------------------------------------------------------------
     # CFP
     # ------------------------------------------------------------------
@@ -201,17 +198,6 @@ class SocialMediaSettingsForm(SettingsForm):
         ),
         required=False,
         initial="7",
-    )
-    socialmedia_cfp_template = forms.CharField(
-        label=_("CFP post template (optional)"),
-        widget=forms.Textarea(attrs={"rows": 3}),
-        required=False,
-        help_text=_(
-            "Leave blank to use the default template. "
-            "Available: {event_name}, {cfp_deadline}, {cfp_link}, {hashtags}. "
-            "Note: A custom template here overrides all schedule waves "
-            "(announcement, reminder, final call) with identical text."
-        ),
     )
 
     # ------------------------------------------------------------------
@@ -232,18 +218,6 @@ class SocialMediaSettingsForm(SettingsForm):
         required=False,
         initial="3",
     )
-    socialmedia_speaker_template = forms.CharField(
-        label=_("Speaker post template (optional)"),
-        widget=forms.Textarea(attrs={"rows": 3}),
-        required=False,
-        help_text=_(
-            "Leave blank to use the default template. "
-            "Available: {event_name}, {speaker_name}, {speaker_link}, "
-            "{talk_title}, {hashtags}. "
-            "Note: A custom template here overrides all schedule waves "
-            "(announcement, reminder, final call) with identical text."
-        ),
-    )
 
     # ------------------------------------------------------------------
     # Session
@@ -262,18 +236,6 @@ class SocialMediaSettingsForm(SettingsForm):
         ),
         required=False,
         initial="30",
-    )
-    socialmedia_session_template = forms.CharField(
-        label=_("Session post template (optional)"),
-        widget=forms.Textarea(attrs={"rows": 3}),
-        required=False,
-        help_text=_(
-            "Leave blank to use the default template. "
-            "Available: {event_name}, {talk_title}, {talk_room}, {talk_start_time}, "
-            "{speaker_names}, {talk_link}, {hashtags}. "
-            "Note: A custom template here overrides all schedule waves "
-            "(announcement, reminder, final call) with identical text."
-        ),
     )
 
     # ------------------------------------------------------------------
@@ -294,18 +256,6 @@ class SocialMediaSettingsForm(SettingsForm):
         required=False,
         initial="5",
     )
-    socialmedia_ticket_template = forms.CharField(
-        label=_("Ticket post template (optional)"),
-        widget=forms.Textarea(attrs={"rows": 3}),
-        required=False,
-        help_text=_(
-            "Leave blank to use the default template. "
-            "Available: {event_name}, {ticket_name}, {ticket_price}, "
-            "{ticket_link}, {hashtags}. "
-            "Note: A custom template here overrides all schedule waves "
-            "(announcement, reminder, final call) with identical text."
-        ),
-    )
 
     # ------------------------------------------------------------------
     # Schedule
@@ -325,33 +275,6 @@ class SocialMediaSettingsForm(SettingsForm):
         required=False,
         initial="2",
     )
-    socialmedia_schedule_template = forms.CharField(
-        label=_("Schedule post template (optional)"),
-        widget=forms.Textarea(attrs={"rows": 3}),
-        required=False,
-        help_text=_(
-            "Leave blank to use the default template. "
-            "Available: {event_name}, {schedule_link}, {hashtags}. "
-            "Note: A custom template here overrides all schedule waves "
-            "(announcement, reminder, final call) with identical text."
-        ),
-    )
-
-    @property
-    def default_template_preview(self):
-        """Return the baked-in defaults for display in the UI."""
-
-        class _AttrDict(dict):
-            """Dict subclass that supports attribute-style access for
-            Django templates."""
-
-            def __getattr__(self, item):
-                try:
-                    return self[item]
-                except KeyError as e:
-                    raise AttributeError(item) from e
-
-        return _AttrDict(DEFAULT_TEMPLATES)
 
     # ------------------------------------------------------------------
     # Offset validation
@@ -391,13 +314,85 @@ class SocialMediaSettingsForm(SettingsForm):
             "days",
         )
 
-    # ------------------------------------------------------------------
-    # Dynamic per-platform template field generation
-    # ------------------------------------------------------------------
+
+class SocialMediaTemplatesForm(SettingsForm):
+    """Dedicated form for customizing social media post templates per content type
+    and per platform.
+    """
+
+    socialmedia_cfp_template = forms.CharField(
+        label=_("CFP post template (optional)"),
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text=_(
+            "Leave blank to use the default template. "
+            "Available: {event_name}, {cfp_deadline}, {cfp_link}, {hashtags}."
+        ),
+    )
+    socialmedia_speaker_template = forms.CharField(
+        label=_("Speaker post template (optional)"),
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text=_(
+            "Leave blank to use the default template. "
+            "Available: {event_name}, {speaker_name}, {speaker_link}, {talk_title}, {hashtags}."
+        ),
+    )
+    socialmedia_session_template = forms.CharField(
+        label=_("Session post template (optional)"),
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text=_(
+            "Leave blank to use the default template. "
+            "Available: {event_name}, {talk_title}, {talk_room}, {talk_start_time}, "
+            "{speaker_names}, {talk_link}, {hashtags}."
+        ),
+    )
+    socialmedia_ticket_template = forms.CharField(
+        label=_("Ticket post template (optional)"),
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text=_(
+            "Leave blank to use the default template. "
+            "Available: {event_name}, {ticket_name}, {ticket_price}, {ticket_link}, {hashtags}."
+        ),
+    )
+    socialmedia_schedule_template = forms.CharField(
+        label=_("Schedule post template (optional)"),
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        help_text=_(
+            "Leave blank to use the default template. "
+            "Available: {event_name}, {schedule_link}, {hashtags}."
+        ),
+    )
+
+    # Custom Waves JSON Storage
+    socialmedia_cfp_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
+    socialmedia_speaker_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
+    socialmedia_session_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
+    socialmedia_ticket_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
+    socialmedia_schedule_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
+
+
+    @property
+    def default_template_preview(self):
+        """Return the baked-in defaults for display in the UI."""
+
+        class _AttrDict(dict):
+            def __getattr__(self, item):
+                try:
+                    return self[item]
+                except KeyError as e:
+                    raise AttributeError(item) from e
+
+        return _AttrDict(DEFAULT_TEMPLATES)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Generate per-platform × per-type template fields.
-        # Field order follows PLATFORM_ORDER × _TYPE_LABELS.
+        from .export import CONTENT_TYPE_WAVES
+
+        # 1. Platform general template fields
         for platform in PLATFORM_ORDER:
             platform_label = PLATFORMS[platform]
             hint = _PLATFORM_HINTS.get(platform, "")
@@ -412,15 +407,91 @@ class SocialMediaSettingsForm(SettingsForm):
                     help_parts.append(hint)
                 help_parts.append(f"Available: {tokens}")
                 self.fields[field_name] = forms.CharField(
-                    label=f"{platform_label} \u2014 {type_label} template",
+                    label=f"{platform_label} — {type_label} template",
                     widget=forms.Textarea(attrs={"rows": rows}),
                     required=False,
                     help_text=" ".join(help_parts),
                 )
 
-    # ------------------------------------------------------------------
-    # Per-platform character limit validation (helper, called by generated methods)
-    # ------------------------------------------------------------------
+        # 2. Wave-specific template fields, toggles, and offsets
+        for post_type, waves in CONTENT_TYPE_WAVES.items():
+            tokens = _TYPE_TOKENS.get(post_type, "")
+            type_label = _TYPE_LABELS.get(post_type, post_type.title())
+            for wave_key, wave_label, def_offset, unit in waves:
+                # Wave enabled toggle
+                en_field = f"socialmedia_{post_type}_{wave_key}_enabled"
+                self.fields[en_field] = forms.BooleanField(
+                    label=_("Enable %(wave)s") % {"wave": wave_label},
+                    initial=True,
+                    required=False,
+                )
+
+                # Wave offset
+                off_field = f"socialmedia_{post_type}_{wave_key}_offset"
+                self.fields[off_field] = forms.IntegerField(
+                    label=_("Offset (%(unit)s)") % {"unit": unit},
+                    initial=def_offset,
+                    required=False,
+                )
+
+                # Wave universal template
+                wt_field = f"socialmedia_{post_type}_{wave_key}_template"
+                self.fields[wt_field] = forms.CharField(
+                    label=f"{type_label} ({wave_label}) template",
+                    widget=forms.Textarea(attrs={"rows": 2}),
+                    required=False,
+                    help_text=_("Leave blank to use system default copy for this wave. Available: %(tokens)s") % {"tokens": tokens},
+                )
+
+    def _clean_custom_waves_json(self, field_name, max_offset):
+        val = self.cleaned_data.get(field_name, "")
+        if not val:
+            return "[]"
+        if isinstance(val, list):
+            parsed = val
+        else:
+            try:
+                import json
+                parsed = json.loads(val)
+            except Exception as e:
+                raise forms.ValidationError(_("Invalid JSON format for custom waves.")) from e
+        if not isinstance(parsed, list):
+            raise forms.ValidationError(_("Custom waves must be a list of wave objects."))
+        if len(parsed) > 20:
+            raise forms.ValidationError(_("Too many custom waves (maximum 20)."))
+        for cw in parsed:
+            if not isinstance(cw, dict):
+                raise forms.ValidationError(_("Each custom wave must be a JSON object."))
+            off = cw.get("offset")
+            if off is not None:
+                try:
+                    off_int = int(off)
+                    if off_int < 0 or off_int > max_offset:
+                        raise forms.ValidationError(
+                            _("Custom wave offset must be between 0 and %(max)s.") % {"max": max_offset}
+                        )
+                except (ValueError, TypeError) as e:
+                    raise forms.ValidationError(_("Custom wave offset must be an integer.")) from e
+            if "label" in cw and len(str(cw["label"])) > 50:
+                raise forms.ValidationError(_("Custom wave label cannot exceed 50 characters."))
+        import json
+        return json.dumps(parsed)
+
+    def clean_socialmedia_cfp_custom_waves(self):
+        return self._clean_custom_waves_json("socialmedia_cfp_custom_waves", MAX_OFFSET_VALUE_CFP)
+
+    def clean_socialmedia_speaker_custom_waves(self):
+        return self._clean_custom_waves_json("socialmedia_speaker_custom_waves", MAX_OFFSET_VALUE_SPEAKER)
+
+    def clean_socialmedia_session_custom_waves(self):
+        return self._clean_custom_waves_json("socialmedia_session_custom_waves", MAX_OFFSET_VALUE_SESSION)
+
+    def clean_socialmedia_ticket_custom_waves(self):
+        return self._clean_custom_waves_json("socialmedia_ticket_custom_waves", MAX_OFFSET_VALUE_TICKET)
+
+    def clean_socialmedia_schedule_custom_waves(self):
+        return self._clean_custom_waves_json("socialmedia_schedule_custom_waves", MAX_OFFSET_VALUE_SCHEDULE)
+
     def _clean_platform_template(self, field_name, platform):
         value = self.cleaned_data.get(field_name, "")
         limit = PLATFORM_CHAR_LIMITS.get(platform)
@@ -429,30 +500,32 @@ class SocialMediaSettingsForm(SettingsForm):
 
 
 def _add_platform_clean_methods():
-    """Dynamically attach clean_<field>() methods to SocialMediaSettingsForm
+    """Dynamically attach clean_<field>() methods to form classes
     for all platform × type combinations that have a character limit."""
-    for platform in PLATFORM_ORDER:
-        if PLATFORM_CHAR_LIMITS.get(platform) is None:
-            continue
-        for post_type in _TYPE_LABELS:
-            field_name = f"socialmedia_{platform}_{post_type}_template"
-            method_name = f"clean_{field_name}"
+    for cls in (SocialMediaTemplatesForm,):
+        for platform in PLATFORM_ORDER:
+            if PLATFORM_CHAR_LIMITS.get(platform) is None:
+                continue
+            for post_type in _TYPE_LABELS:
+                field_name = f"socialmedia_{platform}_{post_type}_template"
+                method_name = f"clean_{field_name}"
 
-            def _make_cleaner(fn, pl):
-                def cleaner(self):
-                    return self._clean_platform_template(fn, pl)
+                def _make_cleaner(fn, pl):
+                    def cleaner(self):
+                        return self._clean_platform_template(fn, pl)
 
-                cleaner.__name__ = f"clean_{fn}"
-                return cleaner
+                    cleaner.__name__ = f"clean_{fn}"
+                    return cleaner
 
-            setattr(
-                SocialMediaSettingsForm,
-                method_name,
-                _make_cleaner(field_name, platform),
-            )
+                setattr(
+                    cls,
+                    method_name,
+                    _make_cleaner(field_name, platform),
+                )
 
 
 _add_platform_clean_methods()
+
 
 
 class TelegramAccountForm(forms.ModelForm):
@@ -751,7 +824,9 @@ class LinkedInAccountForm(forms.ModelForm):
                     cleaned_data["access_token"] = token_data.get("access_token")
                 else:
                     try:
-                        error_msg = resp.json().get("error_description") or resp.text[:200]
+                        error_msg = (
+                            resp.json().get("error_description") or resp.text[:200]
+                        )
                     except Exception:
                         error_msg = resp.text[:200]
                     raise forms.ValidationError(
