@@ -236,8 +236,19 @@
         if (!r.ok) throw new Error(`Export failed: ${r.status}`);
         return r.blob();
       });
-    }, savePostToDB(post, button = null, showToast = true) {
+    },
+    _inFlightSaves: {},
+    _pendingSaves: {},
+
+    savePostToDB(post, button = null, showToast = true) {
       if (!Config.UPDATE_URL || !post) return Promise.resolve();
+
+      // If a save is already in-flight for this post, queue this save to run right after it finishes
+      if (this._inFlightSaves[post.id]) {
+        this._pendingSaves[post.id] = { button, showToast };
+        return this._inFlightSaves[post.id];
+      }
+
       if (button) {
         button.disabled = true;
         UI.setWithIcon(button, "Saving…", "fa fa-spinner fa-spin");
@@ -253,7 +264,8 @@
       const isPinned = (post.post_text !== post.default_text) ||
         (post.post_date !== post.original_post_date) ||
         (post.post_time !== post.original_post_time);
-      return fetch(Config.UPDATE_URL, {
+
+      const savePromise = fetch(Config.UPDATE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,7 +332,18 @@
             button.disabled = false;
             UI.setWithIcon(button, "Save", "fa fa-check");
           }
+        })
+        .finally(() => {
+          delete this._inFlightSaves[post.id];
+          if (this._pendingSaves[post.id]) {
+            const next = this._pendingSaves[post.id];
+            delete this._pendingSaves[post.id];
+            this.savePostToDB(post, next.button, next.showToast);
+          }
         });
+
+      this._inFlightSaves[post.id] = savePromise;
+      return savePromise;
     },
 
     updatePostStatus(post, status) {
@@ -1790,6 +1813,14 @@
           }
         });
 
+        const scheduleDebounceTimers = {};
+
+        const saveScheduleForPost = (postId) => {
+          const post = PostState.get(postId);
+          if (!post || post.status === "published") return;
+          APIClient.savePostToDB(post, null, false);
+        };
+
         const handleScheduleChange = (target, isBlur = false) => {
           const postId = target.dataset.postId;
           if (!postId) return;
@@ -1805,26 +1836,43 @@
           const newDate = dateInput.value;
           const newTime = timeInput.value;
 
-          if (newDate && newTime) {
-            const hasChanged = (post.post_date !== newDate) || (post.post_time !== newTime);
-            if (hasChanged || isBlur) {
-              PostState.update(postId, { post_date: newDate, post_time: newTime, is_saved: false });
-              if (post.post_date !== post.original_post_date) {
-                dateInput.classList.add("is-modified");
-              } else {
-                dateInput.classList.remove("is-modified");
-              }
-              if (post.post_time !== post.original_post_time) {
-                timeInput.classList.add("is-modified");
-              } else {
-                timeInput.classList.remove("is-modified");
-              }
-              UI.ensureScheduleControls(postId);
-              AppController.triggerValidation();
+          if (!newDate || !newTime) return;
 
-              // Auto-save on valid schedule change or blur without full screen toasts
-              APIClient.savePostToDB(post, null, false);
+          const hasChanged = (post.post_date !== newDate) || (post.post_time !== newTime);
+
+          if (hasChanged) {
+            PostState.update(postId, { post_date: newDate, post_time: newTime, is_saved: false });
+            if (post.post_date !== post.original_post_date) {
+              dateInput.classList.add("is-modified");
+            } else {
+              dateInput.classList.remove("is-modified");
             }
+            if (post.post_time !== post.original_post_time) {
+              timeInput.classList.add("is-modified");
+            } else {
+              timeInput.classList.remove("is-modified");
+            }
+            UI.ensureScheduleControls(postId);
+            AppController.triggerValidation();
+
+            if (scheduleDebounceTimers[postId]) {
+              clearTimeout(scheduleDebounceTimers[postId]);
+              delete scheduleDebounceTimers[postId];
+            }
+
+            if (isBlur) {
+              saveScheduleForPost(postId);
+            } else {
+              scheduleDebounceTimers[postId] = setTimeout(() => {
+                delete scheduleDebounceTimers[postId];
+                saveScheduleForPost(postId);
+              }, 300);
+            }
+          } else if (isBlur && scheduleDebounceTimers[postId]) {
+            // Flush any pending debounced save immediately on blur without duplicating
+            clearTimeout(scheduleDebounceTimers[postId]);
+            delete scheduleDebounceTimers[postId];
+            saveScheduleForPost(postId);
           }
         };
 

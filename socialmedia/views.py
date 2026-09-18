@@ -770,8 +770,21 @@ def update_post(request, organizer, event):
         if status is not None:
             if status not in SocialMediaPostStatus.values:
                 return JsonResponse({"error": "Invalid status"}, status=400)
+            if (
+                db_post.status == SocialMediaPostStatus.PUBLISHED
+                and status != SocialMediaPostStatus.PUBLISHED
+            ):
+                return JsonResponse(
+                    {"error": str(_("Published posts cannot change status."))},
+                    status=400,
+                )
             db_post.status = status
         if post_date and post_time:
+            if db_post.status == SocialMediaPostStatus.PUBLISHED:
+                return JsonResponse(
+                    {"error": str(_("Published posts cannot be rescheduled."))},
+                    status=400,
+                )
             tz = pytz.timezone(getattr(request.event, "timezone", None) or "UTC")
             dt_str = f"{post_date} {post_time}"
             naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
@@ -782,7 +795,6 @@ def update_post(request, organizer, event):
             # draft, or failed status back to SCHEDULED so Celery Beat picks it up.
             _reschedulable_statuses = (
                 SocialMediaPostStatus.DRAFT,
-                SocialMediaPostStatus.PUBLISHED,
                 SocialMediaPostStatus.EXPORTED,
                 SocialMediaPostStatus.FAILED,
                 SocialMediaPostStatus.EXCLUDED,
