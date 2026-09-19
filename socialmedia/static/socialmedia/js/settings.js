@@ -238,13 +238,41 @@
       });
     },
     _inFlightSaves: {},
+    _inFlightPayloads: {},
     _pendingSaves: {},
 
     savePostToDB(post, button = null, showToast = true) {
       if (!Config.UPDATE_URL || !post) return Promise.resolve();
 
-      // If a save is already in-flight for this post, queue this save to run right after it finishes
+      const currentPayload = {
+        post_text: post.post_text,
+        post_date: post.post_date,
+        post_time: post.post_time
+      };
+
+      // If values match what was already saved and post is marked saved, skip redundant save
+      if (
+        post.is_saved &&
+        post.last_saved_date === currentPayload.post_date &&
+        post.last_saved_time === currentPayload.post_time &&
+        post.last_saved_text === currentPayload.post_text
+      ) {
+        return Promise.resolve();
+      }
+
+      // If a save is already in-flight for this post:
       if (this._inFlightSaves[post.id]) {
+        const inFlight = this._inFlightPayloads[post.id];
+        // If in-flight request is already persisting these exact values, don't queue a duplicate
+        if (
+          inFlight &&
+          inFlight.post_date === currentPayload.post_date &&
+          inFlight.post_time === currentPayload.post_time &&
+          inFlight.post_text === currentPayload.post_text
+        ) {
+          return this._inFlightSaves[post.id];
+        }
+
         this._pendingSaves[post.id] = { button, showToast };
         return this._inFlightSaves[post.id];
       }
@@ -264,6 +292,8 @@
       const isPinned = (post.post_text !== post.default_text) ||
         (post.post_date !== post.original_post_date) ||
         (post.post_time !== post.original_post_time);
+
+      this._inFlightPayloads[post.id] = currentPayload;
 
       const savePromise = fetch(Config.UPDATE_URL, {
         method: "POST",
@@ -292,6 +322,7 @@
           post.is_saved = true;
           post.last_saved_date = post.post_date;
           post.last_saved_time = post.post_time;
+          post.last_saved_text = post.post_text;
           if (res.post_status) {
             post.status = res.post_status;
             post.error_message = "";
@@ -335,10 +366,18 @@
         })
         .finally(() => {
           delete this._inFlightSaves[post.id];
+          delete this._inFlightPayloads[post.id];
           if (this._pendingSaves[post.id]) {
             const next = this._pendingSaves[post.id];
             delete this._pendingSaves[post.id];
-            this.savePostToDB(post, next.button, next.showToast);
+            if (
+              !post.is_saved ||
+              post.post_date !== post.last_saved_date ||
+              post.post_time !== post.last_saved_time ||
+              post.post_text !== post.last_saved_text
+            ) {
+              this.savePostToDB(post, next.button, next.showToast);
+            }
           }
         });
 
@@ -1818,6 +1857,13 @@
         const saveScheduleForPost = (postId) => {
           const post = PostState.get(postId);
           if (!post || post.status === "published") return;
+          if (
+            post.is_saved &&
+            post.post_date === post.last_saved_date &&
+            post.post_time === post.last_saved_time
+          ) {
+            return;
+          }
           APIClient.savePostToDB(post, null, false);
         };
 
@@ -1838,9 +1884,19 @@
 
           if (!newDate || !newTime) return;
 
-          const hasChanged = (post.post_date !== newDate) || (post.post_time !== newTime);
+          const hasChangedFromState = (post.post_date !== newDate) || (post.post_time !== newTime);
+          const hasUnsavedChanges = (post.last_saved_date !== newDate) || (post.last_saved_time !== newTime);
 
-          if (hasChanged) {
+          // On blur: if values are already saved and match current inputs, skip immediately
+          if (isBlur && !hasChangedFromState && (!hasUnsavedChanges || post.is_saved)) {
+            if (scheduleDebounceTimers[postId]) {
+              clearTimeout(scheduleDebounceTimers[postId]);
+              delete scheduleDebounceTimers[postId];
+            }
+            return;
+          }
+
+          if (hasChangedFromState) {
             PostState.update(postId, { post_date: newDate, post_time: newTime, is_saved: false });
             if (post.post_date !== post.original_post_date) {
               dateInput.classList.add("is-modified");
