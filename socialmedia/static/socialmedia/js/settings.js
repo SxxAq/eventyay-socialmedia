@@ -319,10 +319,14 @@
         .then(res => {
           if (res.db_id) post.db_id = res.db_id;
           post.is_pinned = res.is_pinned;
-          post.is_saved = true;
-          post.last_saved_date = post.post_date;
-          post.last_saved_time = post.post_time;
-          post.last_saved_text = post.post_text;
+          post.last_saved_date = currentPayload.post_date;
+          post.last_saved_time = currentPayload.post_time;
+          post.last_saved_text = currentPayload.post_text;
+          post.is_saved = (
+            post.post_date === currentPayload.post_date &&
+            post.post_time === currentPayload.post_time &&
+            post.post_text === currentPayload.post_text
+          );
           if (res.post_status) {
             post.status = res.post_status;
             post.error_message = "";
@@ -1411,10 +1415,21 @@
                 post_text: old.post_text !== old.default_text ? old.post_text : p.post_text,
                 post_date: old.post_date !== old.original_post_date ? old.post_date : p.post_date,
                 post_time: old.post_time !== old.original_post_time ? old.post_time : p.post_time,
+                last_saved_date: old.last_saved_date || p.post_date,
+                last_saved_time: old.last_saved_time || p.post_time,
+                last_saved_text: old.last_saved_text || p.post_text,
+                is_saved: old.is_saved !== undefined ? old.is_saved : true,
                 enabled: old.enabled
               };
             }
-            return { ...p, enabled: true };
+            return {
+              ...p,
+              last_saved_date: p.post_date,
+              last_saved_time: p.post_time,
+              last_saved_text: p.post_text,
+              is_saved: true,
+              enabled: true
+            };
           });
 
           PostState.init(posts);
@@ -1857,10 +1872,12 @@
         const saveScheduleForPost = (postId) => {
           const post = PostState.get(postId);
           if (!post || post.status === "published") return;
+          const lastSavedDate = post.last_saved_date || post.original_post_date || post.post_date;
+          const lastSavedTime = post.last_saved_time || post.original_post_time || post.post_time;
           if (
             post.is_saved &&
-            post.post_date === post.last_saved_date &&
-            post.post_time === post.last_saved_time
+            post.post_date === lastSavedDate &&
+            post.post_time === lastSavedTime
           ) {
             return;
           }
@@ -1884,14 +1901,18 @@
 
           if (!newDate || !newTime) return;
 
+          const lastSavedDate = post.last_saved_date || post.original_post_date || post.post_date;
+          const lastSavedTime = post.last_saved_time || post.original_post_time || post.post_time;
           const hasChangedFromState = (post.post_date !== newDate) || (post.post_time !== newTime);
-          const hasUnsavedChanges = (post.last_saved_date !== newDate) || (post.last_saved_time !== newTime);
+          const hasUnsavedChanges = (lastSavedDate !== newDate) || (lastSavedTime !== newTime);
 
-          // On blur: if values are already saved and match current inputs, skip immediately
-          if (isBlur && !hasChangedFromState && (!hasUnsavedChanges || post.is_saved)) {
+          if (isBlur && !hasChangedFromState) {
             if (scheduleDebounceTimers[postId]) {
               clearTimeout(scheduleDebounceTimers[postId]);
               delete scheduleDebounceTimers[postId];
+            }
+            if (hasUnsavedChanges && !post.is_saved) {
+              saveScheduleForPost(postId);
             }
             return;
           }
@@ -1924,11 +1945,6 @@
                 saveScheduleForPost(postId);
               }, 300);
             }
-          } else if (isBlur && scheduleDebounceTimers[postId]) {
-            // Flush any pending debounced save immediately on blur without duplicating
-            clearTimeout(scheduleDebounceTimers[postId]);
-            delete scheduleDebounceTimers[postId];
-            saveScheduleForPost(postId);
           }
         };
 
