@@ -217,6 +217,20 @@ class SocialMediaPostSettingsView(DecoupleMixin, FormView):
                 "event": self.request.event.slug,
             },
         )
+        ctx["posts_url"] = reverse(
+            "plugins:socialmedia:index",
+            kwargs={
+                "organizer": self.request.event.organizer.slug,
+                "event": self.request.event.slug,
+            },
+        )
+        ctx["accounts_url"] = (
+            reverse(
+                "plugins:socialmedia:organizer_accounts",
+                kwargs={"organizer": self.request.event.organizer.slug},
+            )
+            + f"?event={self.request.event.slug}"
+        )
         return ctx
 
     @transaction.atomic
@@ -304,8 +318,16 @@ class SocialMediaTemplatesView(DecoupleMixin, FormView):
             },
         )
 
+        ctx["accounts_url"] = (
+            reverse(
+                "plugins:socialmedia:organizer_accounts",
+                kwargs={"organizer": self.request.event.organizer.slug},
+            )
+            + f"?event={self.request.event.slug}"
+        )
+
         enabled_platforms = []
-        for p in ["twitter", "linkedin", "telegram", "mastodon"]:
+        for p in ["twitter", "linkedin", "telegram", "mastodon", "bluesky"]:
             is_enabled = self.request.event.settings.get(
                 f"socialmedia_{p}_enabled", as_type=bool, default=False
             )
@@ -603,7 +625,7 @@ def preview_posts(request, organizer, event):
             # Determine platform & connected account details (Issue #61)
             platform = p.get("platform", "")
             if not platform:
-                for prov in ["twitter", "linkedin", "telegram", "mastodon"]:
+                for prov in ["twitter", "linkedin", "telegram", "mastodon", "bluesky"]:
                     if entity_id.endswith(f"_{prov}"):
                         platform = prov
                         break
@@ -1192,7 +1214,7 @@ def publish_post_now(request, organizer, event):
             )
 
         provider_name = None
-        for prov in ["telegram", "mastodon", "twitter", "linkedin"]:
+        for prov in ["telegram", "mastodon", "twitter", "linkedin", "bluesky"]:
             if entity_id.endswith(f"_{prov}"):
                 provider_name = prov
                 break
@@ -1215,6 +1237,7 @@ def publish_post_now(request, organizer, event):
                         "mastodon",
                         "twitter",
                         "linkedin",
+                        "bluesky",
                     ],
                     is_active=True,
                 )

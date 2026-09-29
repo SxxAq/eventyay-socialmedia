@@ -14,7 +14,7 @@ MAX_OFFSET_VALUE_TICKET = 365
 MAX_OFFSET_VALUE_SCHEDULE = 90
 
 # Display order for platforms in the UI
-PLATFORM_ORDER = ["twitter", "linkedin", "telegram", "mastodon"]
+PLATFORM_ORDER = ["twitter", "linkedin", "telegram", "mastodon", "bluesky"]
 
 # Character limits per platform (None means no enforced limit)
 PLATFORM_CHAR_LIMITS = {
@@ -22,6 +22,7 @@ PLATFORM_CHAR_LIMITS = {
     "mastodon": 500,
     "telegram": 4096,
     "linkedin": 3000,
+    "bluesky": 300,
 }
 
 # Extra help-text hints per platform
@@ -30,6 +31,7 @@ _PLATFORM_HINTS = {
     "mastodon": "≤500 chars.",
     "telegram": "Markdown supported (≤4096 chars).",
     "linkedin": "Professional tone (≤3000 chars).",
+    "bluesky": "≤300 chars.",
 }
 
 # Available placeholder tokens per post type
@@ -177,6 +179,14 @@ class SocialMediaSettingsForm(SettingsForm):
     socialmedia_mastodon_enabled = forms.BooleanField(
         label=_("Enable Mastodon"),
         help_text=_("Generate separate draft posts for Mastodon (≤500 chars)."),
+        required=False,
+        initial=False,
+    )
+    socialmedia_bluesky_enabled = forms.BooleanField(
+        label=_("Enable Bluesky"),
+        help_text=_(
+            "Generate separate draft posts for Bluesky (≤300 chars, AT Protocol rich text)."
+        ),
         required=False,
         initial=False,
     )
@@ -866,10 +876,93 @@ class LinkedInAccountForm(forms.ModelForm):
             instance.save()
         return instance
 
+class BlueskyAccountForm(forms.ModelForm):
+    handle = forms.CharField(
+        label=_("Bluesky Handle"),
+        help_text=_("e.g. user.bsky.social or your custom domain handle"),
+        required=True,
+    )
+    app_password = forms.CharField(
+        label=_("App Password"),
+        widget=forms.PasswordInput(render_value=True),
+        help_text=_(
+            "Create an App Password in Bluesky Settings → Advanced → App passwords. "
+            "Do not use your main account password."
+        ),
+        required=True,
+    )
+    pds_url = forms.URLField(
+        label=_("PDS / Server URL"),
+        initial="https://bsky.social",
+        help_text=_(
+            "Personal Data Server host. Default is https://bsky.social for standard Bluesky accounts."
+        ),
+        required=False,
+    )
+
+    class Meta:
+        model = SocialMediaAccount
+        fields = ["platform_username", "is_active"]
+        labels = {
+            "platform_username": _("Display Name / Account Note"),
+        }
+        help_texts = {
+            "platform_username": _(
+                "Optional display name for this account in Eventyay."
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["platform_username"].required = False
+        if self.instance and self.instance.pk:
+            creds = self.instance.credentials
+            if creds.get("handle"):
+                self.fields["handle"].initial = creds.get("handle")
+            if creds.get("pds_url"):
+                self.fields["pds_url"].initial = creds.get("pds_url")
+            if creds.get("app_password"):
+                self.fields["app_password"].initial = "••••••••"
+                self.fields["app_password"].required = False
+
+    def clean_handle(self):
+        handle = (self.cleaned_data.get("handle") or "").strip()
+        if handle.startswith("@"):
+            handle = handle[1:]
+        return handle
+
+    def clean_pds_url(self):
+        url = (self.cleaned_data.get("pds_url") or "").strip()
+        if not url:
+            return "https://bsky.social"
+        return url.rstrip("/")
+
+    def clean_app_password(self):
+        val = self.cleaned_data.get("app_password")
+        if (not val or val == "••••••••") and self.instance and self.instance.pk:
+            return self.instance.credentials.get("app_password")
+        return val.strip() if val else val
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.provider = "bluesky"
+        handle = self.cleaned_data.get("handle")
+        if not instance.platform_username:
+            instance.platform_username = f"@{handle}"
+        instance.credentials = {
+            "handle": handle,
+            "app_password": self.cleaned_data.get("app_password"),
+            "pds_url": self.cleaned_data.get("pds_url") or "https://bsky.social",
+        }
+        if commit:
+            instance.save()
+        return instance
+
 
 PROVIDER_FORMS = {
     "telegram": TelegramAccountForm,
     "mastodon": MastodonAccountForm,
     "twitter": TwitterAccountForm,
     "linkedin": LinkedInAccountForm,
+    "bluesky": BlueskyAccountForm,
 }

@@ -98,14 +98,79 @@ PLATFORMS = {
     "linkedin": "LinkedIn",
     "telegram": "Telegram",
     "mastodon": "Mastodon",
+    "bluesky": "Bluesky",
 }
 
 # Platform-specific default template overrides.
 # Keys mirror DEFAULT_TEMPLATES; any missing key falls back to DEFAULT_TEMPLATES.
-# Twitter templates are trimmed for the 280-char limit.
+# Twitter/Bluesky templates are trimmed for character limits (280 and 300).
 # Telegram/LinkedIn templates allow richer formatting.
 
 PLATFORM_DEFAULT_TEMPLATES = {
+    "bluesky": {
+        "cfp": {
+            "announcement": (
+                "📢 Submit your proposals for {event_name}! "
+                "Deadline: {cfp_deadline}. {cfp_link} {hashtags}"
+            ),
+            "reminder": (
+                "⏰ CFP Closing Soon for {event_name}! "
+                "Deadline {cfp_deadline}. {cfp_link} {hashtags}"
+            ),
+            "final_call": (
+                "🚨 Last call! Submit to {event_name} by {cfp_deadline}: "
+                "{cfp_link} {hashtags}"
+            ),
+        },
+        "speaker": {
+            "announcement": (
+                "🎤 Meet our speaker {speaker_name} {speaker_social_handle} at {event_name}! "
+                "'{talk_title}' {speaker_link} {hashtags}"
+            ),
+            "reminder": (
+                "🗓 Don't miss {speaker_name} {speaker_social_handle} on '{talk_title}' at {event_name}! "
+                "{speaker_link} {hashtags}"
+            ),
+            "final_call": (
+                "🔥 {speaker_name} {speaker_social_handle} presenting '{talk_title}' at {event_name}. "
+                "Live soon! {speaker_link} {hashtags}"
+            ),
+        },
+        "session": {
+            "announcement": (
+                "🗓 Coming up: '{talk_title}' by {speaker_names} {speaker_social_handles} at {event_name}. "
+                "{talk_link} {hashtags}"
+            ),
+            "reminder": (
+                "⏰ Starting soon: '{talk_title}' by {speaker_names} {speaker_social_handles} at {talk_start_time}. "
+                "{talk_link} {hashtags}"
+            ),
+            "final_call": (
+                "🔥 Starting now: '{talk_title}' in {talk_room}. {talk_link} {hashtags}"
+            ),
+        },
+        "ticket": {
+            "announcement": (
+                "🎟 {ticket_name} tickets for {event_name} — {ticket_price}. "
+                "Get yours: {ticket_link} {hashtags}"
+            ),
+            "reminder": (
+                "⚡ Don't miss {ticket_name} for {event_name}! {ticket_link} {hashtags}"
+            ),
+            "final_call": (
+                "🔥 Last chance! {ticket_name} for {event_name}. "
+                "{ticket_link} {hashtags}"
+            ),
+        },
+        "schedule": {
+            "announcement": (
+                "📅 Full schedule for {event_name} is live! {schedule_link} {hashtags}"
+            ),
+            "reminder": (
+                "🗓 Check the {event_name} schedule: {schedule_link} {hashtags}"
+            ),
+        },
+    },
     "twitter": {
         "cfp": {
             "announcement": (
@@ -478,6 +543,7 @@ def _extract_speaker_social_info(speaker, event=None, target_platform=None):
         "speaker_social_link": "",
         "speaker_twitter": "",
         "speaker_x": "",
+        "speaker_bluesky": "",
         "speaker_linkedin": "",
         "speaker_linkedin_url": "",
         "speaker_github": "",
@@ -549,6 +615,8 @@ def _extract_speaker_social_info(speaker, event=None, target_platform=None):
             in (
                 "twitter",
                 "x",
+                "bluesky",
+                "bsky",
                 "github",
                 "linkedin",
                 "mastodon",
@@ -573,6 +641,9 @@ def _extract_speaker_social_info(speaker, event=None, target_platform=None):
         tw = by_network.get("twitter") or by_network.get("x")
         social_info["speaker_twitter"] = tw["handle"]
         social_info["speaker_x"] = tw["handle"]
+    if "bluesky" in by_network or "bsky" in by_network:
+        bsky = by_network.get("bluesky") or by_network.get("bsky")
+        social_info["speaker_bluesky"] = bsky["handle"]
     if "linkedin" in by_network:
         social_info["speaker_linkedin"] = by_network["linkedin"]["handle"]
         social_info["speaker_linkedin_url"] = by_network["linkedin"]["url"]
@@ -597,6 +668,11 @@ def _extract_speaker_social_info(speaker, event=None, target_platform=None):
             if tw:
                 primary_link = tw["url"]
                 primary_handle = tw["handle"]
+        elif tgt in ("bluesky", "bsky"):
+            bsky = by_network.get("bluesky") or by_network.get("bsky")
+            if bsky:
+                primary_link = bsky["url"]
+                primary_handle = bsky["handle"]
         elif tgt in by_network:
             info_tgt = by_network[tgt]
             primary_link = info_tgt["url"]
