@@ -2333,8 +2333,21 @@
       const input = document.getElementById(targetId);
       if (!input || isNaN(limit)) return;
 
+      const isGraphemeCount = targetId.includes("bluesky");
+      const countLength = (val) => {
+        if (!val) return 0;
+        if (isGraphemeCount) {
+          if (typeof Intl !== "undefined" && Intl.Segmenter) {
+            return Array.from(new Intl.Segmenter().segment(val)).length;
+          }
+          return Array.from(val).length;
+        }
+        return val.length;
+      };
+
       const updateBar = () => {
-        const len = input.value.length;
+        const val = input.value || "";
+        const len = countLength(val);
         bar.textContent = `${len} / ${limit} chars`;
         if (len > limit) {
           bar.classList.add("has-error");

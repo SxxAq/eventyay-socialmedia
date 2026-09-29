@@ -876,6 +876,9 @@ class LinkedInAccountForm(forms.ModelForm):
             instance.save()
         return instance
 
+from django.core.validators import URLValidator
+
+
 class BlueskyAccountForm(forms.ModelForm):
     handle = forms.CharField(
         label=_("Bluesky Handle"),
@@ -894,8 +897,9 @@ class BlueskyAccountForm(forms.ModelForm):
     pds_url = forms.URLField(
         label=_("PDS / Server URL"),
         initial="https://bsky.social",
+        validators=[URLValidator(schemes=["https"])],
         help_text=_(
-            "Personal Data Server host. Default is https://bsky.social for standard Bluesky accounts."
+            "Personal Data Server host. Must use HTTPS. Default is https://bsky.social for standard Bluesky accounts."
         ),
         required=False,
     )

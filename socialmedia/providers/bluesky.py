@@ -60,16 +60,15 @@ def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
         )
 
     # 2. Match Hashtags
-    # Match words preceded by # starting at word boundary or start of string
-    tag_pattern = re.compile(r"(?:^|\s)(#[a-zA-Z0-9_]+)")
+    # Match words preceded by # at start of string or punctuation, including non-ASCII tags
+    tag_pattern = re.compile(r"(?<![\w])#([^\s#\.,;:\?!'\"()\[\]{}]+)")
     for match in tag_pattern.finditer(text):
-        full_match = match.group(1)  # e.g. #eventyay
-        tag_name = full_match.lstrip("#")
+        tag_name = match.group(1)
         if not tag_name:
             continue
 
-        start_char = match.start(1)
-        end_char = match.end(1)
+        start_char = match.start()
+        end_char = match.end()
 
         byte_start = len(text[:start_char].encode("utf-8"))
         byte_end = len(text[:end_char].encode("utf-8"))
@@ -266,6 +265,10 @@ class BlueskyProvider(BaseSocialProvider):
         Returns:
             dict[str, Any]: Contains 'post_id' and 'url' of the published post.
         """
+        text = (text or "").strip()
+        if not text and not media:
+            raise PublishingError("Post text or media is required for Bluesky publishing.")
+
         session = self._create_session()
         access_jwt = session["accessJwt"]
         did = session["did"]

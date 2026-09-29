@@ -359,6 +359,20 @@ def test_bluesky_extract_atproto_facets_utf8_multibyte():
     assert text.encode("utf-8")[byte_start_t:byte_end_t] == b"#conference"
 
 
+def test_bluesky_extract_atproto_facets_punctuation_and_unicode():
+    text = "Welcome (#fossasia)! Join us at #café, #événement & (#summit2026)."
+    facets = extract_atproto_facets(text)
+    tags = [f["features"][0]["tag"] for f in facets if f["features"][0]["$type"] == "app.bsky.richtext.facet#tag"]
+    assert tags == ["fossasia", "café", "événement", "summit2026"]
+
+    # Verify byte ranges match exactly
+    for facet in facets:
+        b_start = facet["index"]["byteStart"]
+        b_end = facet["index"]["byteEnd"]
+        matched_bytes = text.encode("utf-8")[b_start:b_end]
+        assert matched_bytes.startswith(b"#")
+
+
 @patch("requests.post")
 def test_bluesky_validate_credentials(mock_post, mock_account):
     mock_account.provider = "bluesky"
@@ -569,4 +583,17 @@ def test_bluesky_publish_post_error(mock_post, mock_account):
 
     with pytest.raises(PublishingError, match="Bluesky post creation failed"):
         provider.publish_post("text")
+
+
+def test_bluesky_publish_post_empty_text_error(mock_account):
+    mock_account.provider = "bluesky"
+    mock_account.credentials = {
+        "handle": "test.bsky.social",
+        "app_password": "fake-app-password",
+        "pds_url": "https://bsky.social",
+    }
+    provider = BlueskyProvider(mock_account)
+
+    with pytest.raises(PublishingError, match="Post text or media is required"):
+        provider.publish_post("   ")
 

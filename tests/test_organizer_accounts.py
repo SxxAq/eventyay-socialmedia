@@ -521,3 +521,28 @@ def test_bluesky_account_update_masked_password(organizer_admin_client, organize
     assert account.credentials["app_password"] == "existing-secret-password"
     assert account.credentials["pds_url"] == "https://custom.pds.social"
 
+
+def test_bluesky_account_form_rejects_http_pds_url():
+    from socialmedia.forms import BlueskyAccountForm
+
+    # HTTP scheme should fail validation
+    form = BlueskyAccountForm(
+        data={
+            "handle": "user.bsky.social",
+            "app_password": "my-secret-app-password",
+            "pds_url": "http://insecure.pds.social",
+        }
+    )
+    assert not form.is_valid()
+    assert "pds_url" in form.errors
+
+    # HTTPS scheme should succeed
+    form_valid = BlueskyAccountForm(
+        data={
+            "handle": "user.bsky.social",
+            "app_password": "my-secret-app-password",
+            "pds_url": "https://secure.pds.social",
+        }
+    )
+    assert form_valid.is_valid()
+
