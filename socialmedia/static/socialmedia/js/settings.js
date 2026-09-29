@@ -2313,7 +2313,7 @@
     document.querySelectorAll(".reset-default-btn").forEach(btn => {
       btn.addEventListener("click", function () {
         const type = this.dataset.type;
-        const panel = document.getElementById(`custom-tpls-${type}`);
+        const panel = document.getElementById(`custom-plat-${type}`) || document.getElementById(`custom-tpls-${type}`);
         if (panel) {
           panel.querySelectorAll("textarea").forEach(ta => {
             ta.value = "";
