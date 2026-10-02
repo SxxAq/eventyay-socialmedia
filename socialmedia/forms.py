@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from eventyay.base.forms import SettingsForm
 
@@ -185,7 +186,8 @@ class SocialMediaSettingsForm(SettingsForm):
     socialmedia_bluesky_enabled = forms.BooleanField(
         label=_("Enable Bluesky"),
         help_text=_(
-            "Generate separate draft posts for Bluesky (≤300 chars, AT Protocol rich text)."
+            "Generate separate draft posts for Bluesky "
+            "(≤300 chars, AT Protocol rich text)."
         ),
         required=False,
         initial=False,
@@ -378,12 +380,21 @@ class SocialMediaTemplatesForm(SettingsForm):
     )
 
     # Custom Waves JSON Storage
-    socialmedia_cfp_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
-    socialmedia_speaker_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
-    socialmedia_session_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
-    socialmedia_ticket_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
-    socialmedia_schedule_custom_waves = forms.CharField(widget=forms.HiddenInput(), required=False)
-
+    socialmedia_cfp_custom_waves = forms.CharField(
+        widget=forms.HiddenInput(), required=False
+    )
+    socialmedia_speaker_custom_waves = forms.CharField(
+        widget=forms.HiddenInput(), required=False
+    )
+    socialmedia_session_custom_waves = forms.CharField(
+        widget=forms.HiddenInput(), required=False
+    )
+    socialmedia_ticket_custom_waves = forms.CharField(
+        widget=forms.HiddenInput(), required=False
+    )
+    socialmedia_schedule_custom_waves = forms.CharField(
+        widget=forms.HiddenInput(), required=False
+    )
 
     @property
     def default_template_preview(self):
@@ -450,7 +461,10 @@ class SocialMediaTemplatesForm(SettingsForm):
                     label=f"{type_label} ({wave_label}) template",
                     widget=forms.Textarea(attrs={"rows": 2}),
                     required=False,
-                    help_text=_("Leave blank to use system default copy for this wave. Available: %(tokens)s") % {"tokens": tokens},
+                    help_text=_(
+                        "Leave blank to use system default copy for this wave. Available: %(tokens)s"
+                    )
+                    % {"tokens": tokens},
                 )
 
     def _clean_custom_waves_json(self, field_name, max_offset):
@@ -462,45 +476,68 @@ class SocialMediaTemplatesForm(SettingsForm):
         else:
             try:
                 import json
+
                 parsed = json.loads(val)
             except Exception as e:
-                raise forms.ValidationError(_("Invalid JSON format for custom waves.")) from e
+                raise forms.ValidationError(
+                    _("Invalid JSON format for custom waves.")
+                ) from e
         if not isinstance(parsed, list):
-            raise forms.ValidationError(_("Custom waves must be a list of wave objects."))
+            raise forms.ValidationError(
+                _("Custom waves must be a list of wave objects.")
+            )
         if len(parsed) > 20:
             raise forms.ValidationError(_("Too many custom waves (maximum 20)."))
         for cw in parsed:
             if not isinstance(cw, dict):
-                raise forms.ValidationError(_("Each custom wave must be a JSON object."))
+                raise forms.ValidationError(
+                    _("Each custom wave must be a JSON object.")
+                )
             off = cw.get("offset")
             if off is not None:
                 try:
                     off_int = int(off)
                     if off_int < 0 or off_int > max_offset:
                         raise forms.ValidationError(
-                            _("Custom wave offset must be between 0 and %(max)s.") % {"max": max_offset}
+                            _("Custom wave offset must be between 0 and %(max)s.")
+                            % {"max": max_offset}
                         )
                 except (ValueError, TypeError) as e:
-                    raise forms.ValidationError(_("Custom wave offset must be an integer.")) from e
+                    raise forms.ValidationError(
+                        _("Custom wave offset must be an integer.")
+                    ) from e
             if "label" in cw and len(str(cw["label"])) > 50:
-                raise forms.ValidationError(_("Custom wave label cannot exceed 50 characters."))
+                raise forms.ValidationError(
+                    _("Custom wave label cannot exceed 50 characters.")
+                )
         import json
+
         return json.dumps(parsed)
 
     def clean_socialmedia_cfp_custom_waves(self):
-        return self._clean_custom_waves_json("socialmedia_cfp_custom_waves", MAX_OFFSET_VALUE_CFP)
+        return self._clean_custom_waves_json(
+            "socialmedia_cfp_custom_waves", MAX_OFFSET_VALUE_CFP
+        )
 
     def clean_socialmedia_speaker_custom_waves(self):
-        return self._clean_custom_waves_json("socialmedia_speaker_custom_waves", MAX_OFFSET_VALUE_SPEAKER)
+        return self._clean_custom_waves_json(
+            "socialmedia_speaker_custom_waves", MAX_OFFSET_VALUE_SPEAKER
+        )
 
     def clean_socialmedia_session_custom_waves(self):
-        return self._clean_custom_waves_json("socialmedia_session_custom_waves", MAX_OFFSET_VALUE_SESSION)
+        return self._clean_custom_waves_json(
+            "socialmedia_session_custom_waves", MAX_OFFSET_VALUE_SESSION
+        )
 
     def clean_socialmedia_ticket_custom_waves(self):
-        return self._clean_custom_waves_json("socialmedia_ticket_custom_waves", MAX_OFFSET_VALUE_TICKET)
+        return self._clean_custom_waves_json(
+            "socialmedia_ticket_custom_waves", MAX_OFFSET_VALUE_TICKET
+        )
 
     def clean_socialmedia_schedule_custom_waves(self):
-        return self._clean_custom_waves_json("socialmedia_schedule_custom_waves", MAX_OFFSET_VALUE_SCHEDULE)
+        return self._clean_custom_waves_json(
+            "socialmedia_schedule_custom_waves", MAX_OFFSET_VALUE_SCHEDULE
+        )
 
     def _clean_platform_template(self, field_name, platform):
         value = self.cleaned_data.get(field_name, "")
@@ -535,7 +572,6 @@ def _add_platform_clean_methods():
 
 
 _add_platform_clean_methods()
-
 
 
 class TelegramAccountForm(forms.ModelForm):
@@ -876,8 +912,6 @@ class LinkedInAccountForm(forms.ModelForm):
             instance.save()
         return instance
 
-from django.core.validators import URLValidator
-
 
 class BlueskyAccountForm(forms.ModelForm):
     handle = forms.CharField(
@@ -899,7 +933,8 @@ class BlueskyAccountForm(forms.ModelForm):
         initial="https://bsky.social",
         validators=[URLValidator(schemes=["https"])],
         help_text=_(
-            "Personal Data Server host. Must use HTTPS. Default is https://bsky.social for standard Bluesky accounts."
+            "Personal Data Server host. Must use HTTPS. "
+            "Default is https://bsky.social for standard Bluesky accounts."
         ),
         required=False,
     )

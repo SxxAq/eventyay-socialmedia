@@ -362,7 +362,11 @@ def test_bluesky_extract_atproto_facets_utf8_multibyte():
 def test_bluesky_extract_atproto_facets_punctuation_and_unicode():
     text = "Welcome (#fossasia)! Join us at #café, #événement & (#summit2026)."
     facets = extract_atproto_facets(text)
-    tags = [f["features"][0]["tag"] for f in facets if f["features"][0]["$type"] == "app.bsky.richtext.facet#tag"]
+    tags = [
+        f["features"][0]["tag"]
+        for f in facets
+        if f["features"][0]["$type"] == "app.bsky.richtext.facet#tag"
+    ]
     assert tags == ["fossasia", "café", "événement", "summit2026"]
 
     # Verify byte ranges match exactly
@@ -597,3 +601,55 @@ def test_bluesky_publish_post_empty_text_error(mock_account):
     with pytest.raises(PublishingError, match="Post text or media is required"):
         provider.publish_post("   ")
 
+
+def test_bluesky_extract_atproto_facets_skips_overlapping_url_anchors():
+    text = "Read docs at https://eventyay.com/docs#setup and check #eventyay!"
+    facets = extract_atproto_facets(text)
+    # Should only extract 1 URL facet and 1 tag facet (#eventyay),
+    # skipping #setup in URL
+    assert len(facets) == 2
+    assert facets[0]["features"][0]["$type"] == "app.bsky.richtext.facet#link"
+    assert facets[0]["features"][0]["uri"] == "https://eventyay.com/docs#setup"
+    assert facets[1]["features"][0]["$type"] == "app.bsky.richtext.facet#tag"
+    assert facets[1]["features"][0]["tag"] == "eventyay"
+
+
+def test_bluesky_publish_post_exceeds_limits(mock_account):
+    mock_account.provider = "bluesky"
+    mock_account.credentials = {
+        "handle": "test.bsky.social",
+        "app_password": "fake-app-password",
+        "pds_url": "https://bsky.social",
+    }
+    provider = BlueskyProvider(mock_account)
+
+    long_text = "a" * 301
+    with pytest.raises(PublishingError, match="Post exceeds Bluesky limits"):
+        provider.publish_post(long_text)
+
+
+@patch("requests.post")
+def test_bluesky_publish_post_empty_text_and_no_embed(mock_post, mock_account):
+    mock_account.provider = "bluesky"
+    mock_account.credentials = {
+        "handle": "test.bsky.social",
+        "app_password": "fake-app-password",
+        "pds_url": "https://bsky.social",
+    }
+    provider = BlueskyProvider(mock_account)
+
+    res_session = MagicMock()
+    res_session.status_code = 200
+    res_session.json.return_value = {
+        "accessJwt": "fake_jwt",
+        "did": "did:plc:12345",
+        "handle": "test.bsky.social",
+    }
+    mock_post.return_value = res_session
+
+    # media contains only empty string so embed is None and text is empty
+    with pytest.raises(
+        PublishingError,
+        match="Bluesky post must contain non-empty text or a valid media attachment.",
+    ):
+        provider.publish_post("", media=[""])

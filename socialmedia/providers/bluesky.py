@@ -2,6 +2,7 @@ import logging
 import mimetypes
 import os
 import re
+import unicodedata
 from datetime import UTC, datetime
 from typing import Any
 
@@ -15,6 +16,34 @@ from .base import (
 )
 
 logger = logging.getLogger(__name__)
+
+MAX_POST_GRAPHEMES = 300
+MAX_POST_BYTES = 3000
+
+
+def _count_graphemes(text: str) -> int:
+    """Count user-perceived characters (grapheme clusters) in text.
+
+    Supports base characters combined with combining marks, skin tone
+    modifiers, variation selectors, and zero-width joiners.
+    """
+    if not text:
+        return 0
+    count = 0
+    in_cluster = False
+    for char in text:
+        cat = unicodedata.category(char)
+        if in_cluster and (
+            unicodedata.combining(char) != 0
+            or cat in ("Mn", "Mc", "Me", "Cf")
+            or 0x1F3FB <= ord(char) <= 0x1F3FF
+            or 0xFE00 <= ord(char) <= 0xFE0F
+            or 0xE0100 <= ord(char) <= 0xE01EF
+        ):
+            continue
+        count += 1
+        in_cluster = True
+    return count
 
 
 def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
@@ -30,6 +59,7 @@ def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
         return []
 
     facets = []
+    occupied_spans: list[tuple[int, int]] = []
 
     # 1. Match URLs
     url_pattern = re.compile(r"https?://[^\s]+")
@@ -47,6 +77,7 @@ def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
         byte_start = len(text[:start_char].encode("utf-8"))
         byte_end = len(text[:end_char].encode("utf-8"))
 
+        occupied_spans.append((byte_start, byte_end))
         facets.append(
             {
                 "index": {"byteStart": byte_start, "byteEnd": byte_end},
@@ -60,7 +91,8 @@ def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
         )
 
     # 2. Match Hashtags
-    # Match words preceded by # at start of string or punctuation, including non-ASCII tags
+    # Match words preceded by # at start of string or punctuation,
+    # including non-ASCII tags
     tag_pattern = re.compile(r"(?<![\w])#([^\s#\.,;:\?!'\"()\[\]{}]+)")
     for match in tag_pattern.finditer(text):
         tag_name = match.group(1)
@@ -73,6 +105,14 @@ def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
         byte_start = len(text[:start_char].encode("utf-8"))
         byte_end = len(text[:end_char].encode("utf-8"))
 
+        # Skip if this hashtag overlaps with any already-extracted URL facet
+        if any(
+            not (byte_end <= span_start or byte_start >= span_end)
+            for span_start, span_end in occupied_spans
+        ):
+            continue
+
+        occupied_spans.append((byte_start, byte_end))
         facets.append(
             {
                 "index": {"byteStart": byte_start, "byteEnd": byte_end},
@@ -267,7 +307,17 @@ class BlueskyProvider(BaseSocialProvider):
         """
         text = (text or "").strip()
         if not text and not media:
-            raise PublishingError("Post text or media is required for Bluesky publishing.")
+            raise PublishingError(
+                "Post text or media is required for Bluesky publishing."
+            )
+
+        grapheme_count = _count_graphemes(text)
+        byte_count = len(text.encode("utf-8"))
+        if grapheme_count > MAX_POST_GRAPHEMES or byte_count > MAX_POST_BYTES:
+            raise PublishingError(
+                f"Post exceeds Bluesky limits: {grapheme_count}/{MAX_POST_GRAPHEMES} "
+                f"graphemes, {byte_count}/{MAX_POST_BYTES} bytes."
+            )
 
         session = self._create_session()
         access_jwt = session["accessJwt"]
@@ -303,6 +353,11 @@ class BlueskyProvider(BaseSocialProvider):
                     "$type": "app.bsky.embed.images",
                     "images": images,
                 }
+
+        if not text and not embed:
+            raise PublishingError(
+                "Bluesky post must contain non-empty text or a valid media attachment."
+            )
 
         # 3. Build post record
         now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
