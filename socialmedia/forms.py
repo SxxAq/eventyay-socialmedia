@@ -862,11 +862,11 @@ class LinkedInAccountForm(forms.ModelForm):
                 if resp.status_code == 200:
                     try:
                         token_data = resp.json()
-                    except Exception:
+                    except Exception as err:
                         raise forms.ValidationError(
                             _("LinkedIn token exchange failed: %(error)s"),
                             params={"error": resp.text[:200]},
-                        )
+                        ) from err
                     cleaned_data["access_token"] = token_data.get("access_token")
                 else:
                     try:

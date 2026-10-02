@@ -418,6 +418,7 @@ class SocialMediaTemplatesView(DecoupleMixin, FormView):
     @transaction.atomic
     def form_valid(self, form):
         import json
+
         from .export import CONTENT_TYPE_WAVES
 
         self._save_decoupled(form)
@@ -427,7 +428,7 @@ class SocialMediaTemplatesView(DecoupleMixin, FormView):
         for ptype, waves in CONTENT_TYPE_WAVES.items():
             active_offs = []
             has_wave_setting = False
-            for wkey, wlabel, def_off, wunit in waves:
+            for wkey, _wlabel, def_off, _wunit in waves:
                 en_key = f"socialmedia_{ptype}_{wkey}_enabled"
                 off_key = f"socialmedia_{ptype}_{wkey}_offset"
                 if en_key in form.cleaned_data:

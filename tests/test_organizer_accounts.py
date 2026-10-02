@@ -545,4 +545,3 @@ def test_bluesky_account_form_rejects_http_pds_url():
         }
     )
     assert form_valid.is_valid()
-
