@@ -3,18 +3,19 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 
 from socialmedia.models import SocialMediaAccount
-from socialmedia.providers import (
+from socialmedia.providers.base import (
     BaseSocialProvider,
     PublishingError,
-    get_provider,
-    get_provider_class,
+    _safe_fetch_url,
 )
 from socialmedia.providers.bluesky import (
     BlueskyProvider,
+    _count_graphemes,
     extract_atproto_facets,
 )
 from socialmedia.providers.linkedin import LinkedInProvider
 from socialmedia.providers.mastodon import MastodonProvider
+from socialmedia.providers.registry import get_provider, get_provider_class
 from socialmedia.providers.telegram import TelegramProvider
 from socialmedia.providers.twitter import TwitterProvider
 
@@ -653,3 +654,83 @@ def test_bluesky_publish_post_empty_text_and_no_embed(mock_post, mock_account):
         match="Bluesky post must contain non-empty text or a valid media attachment.",
     ):
         provider.publish_post("", media=[""])
+
+
+def test_bluesky_count_graphemes_zwj_sequence():
+    # Family emoji sequence: Woman + ZWJ + Woman + ZWJ + Girl + ZWJ + Boy
+    family = "👩‍👩‍👧‍👦"
+    assert _count_graphemes(family) == 1
+    assert _count_graphemes("👨‍⚕️") == 1
+    # 76 family emojis = 76 graphemes
+    assert _count_graphemes(family * 76) == 76
+
+
+def test_bluesky_extract_atproto_facets_preserves_exclamation_in_url():
+    text = "Visit https://example.test/docs#section! to read more."
+    facets = extract_atproto_facets(text)
+    assert len(facets) == 1
+    assert facets[0]["features"][0]["$type"] == "app.bsky.richtext.facet#link"
+    assert facets[0]["features"][0]["uri"] == "https://example.test/docs#section!"
+
+
+@patch("socket.getaddrinfo")
+@patch("requests.get")
+def test_safe_fetch_url_valid_redirect(mock_get, mock_getaddrinfo):
+    mock_getaddrinfo.return_value = [
+        (2, 1, 6, "", ("93.184.216.34", 0)),
+    ]
+
+    res_redir = MagicMock()
+    res_redir.is_redirect = True
+    res_redir.status_code = 302
+    res_redir.headers = {"Location": "https://example.com/target.png"}
+
+    res_final = MagicMock()
+    res_final.is_redirect = False
+    res_final.status_code = 200
+    res_final.iter_content.return_value = [b"image_content"]
+    res_final.apparent_encoding = "utf-8"
+
+    mock_get.side_effect = [res_redir, res_final]
+
+    resp = _safe_fetch_url("https://example.com/source.png")
+    assert resp._content == b"image_content"
+    assert mock_get.call_count == 2
+
+
+@patch("socket.getaddrinfo")
+@patch("requests.get")
+def test_safe_fetch_url_blocks_redirect_to_private_ip(mock_get, mock_getaddrinfo):
+    def fake_getaddrinfo(host, port):
+        if host == "public.com":
+            return [(2, 1, 6, "", ("93.184.216.34", 0))]
+        # Redirect destination points to internal metadata IP
+        return [(2, 1, 6, "", ("169.254.169.254", 0))]
+
+    mock_getaddrinfo.side_effect = fake_getaddrinfo
+
+    res_redir = MagicMock()
+    res_redir.is_redirect = True
+    res_redir.status_code = 302
+    res_redir.headers = {"Location": "http://internal-meta/latest"}
+
+    mock_get.return_value = res_redir
+
+    with pytest.raises(ValueError, match="blocked network"):
+        _safe_fetch_url("https://public.com/image.png")
+
+
+@patch("socket.getaddrinfo")
+@patch("requests.get")
+def test_safe_fetch_url_too_many_redirects(mock_get, mock_getaddrinfo):
+    mock_getaddrinfo.return_value = [(2, 1, 6, "", ("93.184.216.34", 0))]
+
+    res_redir = MagicMock()
+    res_redir.is_redirect = True
+    res_redir.status_code = 302
+    res_redir.headers = {"Location": "https://example.com/loop"}
+
+    mock_get.return_value = res_redir
+
+    with pytest.raises(ValueError, match="Too many redirects"):
+        _safe_fetch_url("https://example.com/loop", max_redirects=2)

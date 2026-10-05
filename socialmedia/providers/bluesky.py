@@ -31,8 +31,12 @@ def _count_graphemes(text: str) -> int:
         return 0
     count = 0
     in_cluster = False
+    after_zwj = False
     for char in text:
         cat = unicodedata.category(char)
+        if after_zwj:
+            after_zwj = char == "\u200d"
+            continue
         if in_cluster and (
             unicodedata.combining(char) != 0
             or cat in ("Mn", "Mc", "Me", "Cf")
@@ -40,9 +44,12 @@ def _count_graphemes(text: str) -> int:
             or 0xFE00 <= ord(char) <= 0xFE0F
             or 0xE0100 <= ord(char) <= 0xE01EF
         ):
+            if char == "\u200d":
+                after_zwj = True
             continue
         count += 1
         in_cluster = True
+        after_zwj = char == "\u200d"
     return count
 
 
@@ -66,7 +73,7 @@ def extract_atproto_facets(text: str) -> list[dict[str, Any]]:
     for match in url_pattern.finditer(text):
         uri = match.group(0)
         # Strip trailing punctuation that is likely not part of the URL
-        while uri and uri[-1] in ".,!?:;)'\"]":
+        while uri and uri[-1] in ".,?:;)'\"]":
             uri = uri[:-1]
         if not uri:
             continue

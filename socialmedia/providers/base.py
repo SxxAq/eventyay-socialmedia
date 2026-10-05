@@ -4,7 +4,7 @@ import mimetypes
 import os
 import socket
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -27,8 +27,39 @@ _BLOCKED_NETWORKS = [
 ]
 
 
-def _safe_fetch_url(url: str, timeout: int = 20) -> requests.Response:
-    """Fetch *url* after verifying it does not point to a private/internal host.
+def _validate_url_host(url: str) -> None:
+    """Verify that url uses http(s) and does not resolve to a blocked IP range."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Unsupported URL scheme {parsed.scheme!r} for {url!r}")
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError(f"Cannot resolve hostname from URL: {url}")
+
+    try:
+        addrs = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as exc:
+        raise ValueError(f"DNS resolution failed for {hostname!r}: {exc}") from exc
+
+    for _family, _type, _proto, _canonname, sockaddr in addrs:
+        ip_str = sockaddr[0]
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            continue
+        for network in _BLOCKED_NETWORKS:
+            if ip in network:
+                raise ValueError(
+                    f"Refusing to fetch {url!r}: resolved IP {ip_str} is in "
+                    f"blocked network {network}."
+                )
+
+
+def _safe_fetch_url(
+    url: str, timeout: int = 20, max_redirects: int = 5
+) -> requests.Response:
+    """Fetch *url* after verifying it and any redirect destinations do not point
+    to a private/internal host.
 
     In DEBUG mode the IP block is skipped and own-server URLs (under MEDIA_URL)
     are served directly from MEDIA_ROOT to support local development.
@@ -60,30 +91,23 @@ def _safe_fetch_url(url: str, timeout: int = 20) -> requests.Response:
         resp._content = resp.content
         return resp
 
-    parsed = requests.utils.urlparse(url)
-    hostname = parsed.hostname
-    if not hostname:
-        raise ValueError(f"Cannot resolve hostname from URL: {url}")
-
-    try:
-        addrs = socket.getaddrinfo(hostname, None)
-    except socket.gaierror as exc:
-        raise ValueError(f"DNS resolution failed for {hostname!r}: {exc}") from exc
-
-    for _family, _type, _proto, _canonname, sockaddr in addrs:
-        ip_str = sockaddr[0]
-        try:
-            ip = ipaddress.ip_address(ip_str)
-        except ValueError:
+    current_url = url
+    for _ in range(max_redirects + 1):
+        _validate_url_host(current_url)
+        resp = requests.get(
+            current_url, timeout=timeout, stream=True, allow_redirects=False
+        )
+        if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get("Location")
+            if not location:
+                break
+            current_url = urljoin(current_url, location)
+            resp.close()
             continue
-        for network in _BLOCKED_NETWORKS:
-            if ip in network:
-                raise ValueError(
-                    f"Refusing to fetch {url!r}: resolved IP {ip_str} is in "
-                    f"blocked network {network}."
-                )
+        break
+    else:
+        raise ValueError(f"Too many redirects while fetching {url!r}")
 
-    resp = requests.get(url, timeout=timeout, stream=True)
     resp.raise_for_status()
 
     # Read up to _MAX_MEDIA_BYTES; reject oversized responses.
