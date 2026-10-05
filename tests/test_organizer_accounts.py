@@ -511,7 +511,7 @@ def test_bluesky_account_update_masked_password(organizer_admin_client, organize
     payload = {
         "handle": "myuser.bsky.social",
         "app_password": "••••••••",
-        "pds_url": "https://custom.pds.social",
+        "pds_url": "https://bsky.social",
         "is_active": "on",
     }
     response = organizer_admin_client.post(url, data=payload)
@@ -519,7 +519,7 @@ def test_bluesky_account_update_masked_password(organizer_admin_client, organize
 
     account.refresh_from_db()
     assert account.credentials["app_password"] == "existing-secret-password"
-    assert account.credentials["pds_url"] == "https://custom.pds.social"
+    assert account.credentials["pds_url"] == "https://bsky.social"
 
 
 def test_bluesky_account_form_rejects_http_pds_url():
@@ -530,18 +530,33 @@ def test_bluesky_account_form_rejects_http_pds_url():
         data={
             "handle": "user.bsky.social",
             "app_password": "my-secret-app-password",
-            "pds_url": "http://insecure.pds.social",
+            "pds_url": "http://example.com",
         }
     )
     assert not form.is_valid()
     assert "pds_url" in form.errors
 
-    # HTTPS scheme should succeed
+    # HTTPS scheme with public host should succeed
     form_valid = BlueskyAccountForm(
         data={
             "handle": "user.bsky.social",
             "app_password": "my-secret-app-password",
-            "pds_url": "https://secure.pds.social",
+            "pds_url": "https://example.com",
         }
     )
     assert form_valid.is_valid()
+
+
+def test_bluesky_account_form_rejects_private_ip_pds_url():
+    from socialmedia.forms import BlueskyAccountForm
+
+    form = BlueskyAccountForm(
+        data={
+            "handle": "user.bsky.social",
+            "app_password": "my-secret-app-password",
+            "pds_url": "https://127.0.0.1:8000",
+        }
+    )
+    assert not form.is_valid()
+    assert "pds_url" in form.errors
+    assert "blocked network" in str(form.errors["pds_url"])

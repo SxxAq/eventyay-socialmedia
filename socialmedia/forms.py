@@ -5,6 +5,7 @@ from eventyay.base.forms import SettingsForm
 
 from .export import DEFAULT_TEMPLATES, PLATFORMS
 from .models import SocialMediaAccount
+from .providers.base import _validate_url_host
 from .telegram_utils import normalize_telegram_chat_id
 
 MAX_OFFSETS = 10
@@ -974,7 +975,15 @@ class BlueskyAccountForm(forms.ModelForm):
         url = (self.cleaned_data.get("pds_url") or "").strip()
         if not url:
             return "https://bsky.social"
-        return url.rstrip("/")
+        url = url.rstrip("/")
+        try:
+            _validate_url_host(url)
+        except ValueError as exc:
+            raise forms.ValidationError(
+                _("Invalid PDS host: %(error)s"),
+                params={"error": str(exc)},
+            ) from exc
+        return url
 
     def clean_app_password(self):
         val = self.cleaned_data.get("app_password")

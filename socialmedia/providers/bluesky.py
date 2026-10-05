@@ -13,6 +13,7 @@ from .base import (
     PublishingError,
     _safe_fetch_url,
     _try_local_media_fallback,
+    _validate_url_host,
 )
 
 logger = logging.getLogger(__name__)
@@ -145,7 +146,12 @@ class BlueskyProvider(BaseSocialProvider):
     def _get_pds_url(self) -> str:
         """Return the configured PDS URL or default bsky.social."""
         url = self.credentials.get("pds_url") or self.DEFAULT_PDS_URL
-        return url.strip().rstrip("/")
+        url = url.strip().rstrip("/")
+        try:
+            _validate_url_host(url)
+        except ValueError as exc:
+            raise PublishingError(f"Invalid PDS URL {url!r}: {exc}") from exc
+        return url
 
     def _get_identifier(self) -> str:
         """Return the handle or identifier from credentials or platform_username."""

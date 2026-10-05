@@ -734,3 +734,15 @@ def test_safe_fetch_url_too_many_redirects(mock_get, mock_getaddrinfo):
 
     with pytest.raises(ValueError, match="Too many redirects"):
         _safe_fetch_url("https://example.com/loop", max_redirects=2)
+
+
+def test_bluesky_provider_rejects_private_ip_pds_url(mock_account):
+    mock_account.provider = "bluesky"
+    mock_account.credentials = {
+        "handle": "test.bsky.social",
+        "app_password": "fake-app-password",
+        "pds_url": "https://127.0.0.1:8000",
+    }
+    provider = BlueskyProvider(mock_account)
+    with pytest.raises(PublishingError, match="blocked network"):
+        provider._get_pds_url()
